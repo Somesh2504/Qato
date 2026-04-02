@@ -63,7 +63,7 @@ export default function PaymentResultPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
       {/* Animated Icon */}
       <div
         className={`w-24 h-24 rounded-full flex items-center justify-center mb-6 ${

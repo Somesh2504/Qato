@@ -230,7 +230,7 @@ export default function MenuManagementPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8F9FA]">
+    <div className="flex h-screen overflow-hidden bg-white">
       <AdminSidebar />
       <main className="flex-1 overflow-hidden">
         <div className="h-full grid grid-cols-1 xl:grid-cols-[30%_70%]">
@@ -294,7 +294,7 @@ export default function MenuManagementPage() {
           </section>
 
           <section className="overflow-y-auto">
-            <div className="sticky top-0 bg-[#F8F9FA] border-b border-gray-200 p-4 z-10">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-xl font-bold text-[#1A1A2E]">{categories.find((c) => c.id === selectedCategoryId)?.name || 'Items'}</h2>
                 <div className="flex items-center gap-2">

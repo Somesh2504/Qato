@@ -109,37 +109,37 @@ export default function LoginPage() {
   };
 
   const inputCls =
-    'w-full h-11 rounded-xl bg-white/10 border border-white/20 px-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[#FF6B35] transition-colors';
+    'w-full h-12 rounded-xl bg-white border-1.5 border-gray-200 px-3 text-sm text-[#1A1A2E] placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B35] focus:ring-2 focus:ring-[#FF6B35]/10 transition-all';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1A1A2E] via-[#16213E] to-[#0F3460] p-4">
-      {/* Background blobs */}
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-[#FF6B35]/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-[#FF6B35]/10 blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-[#FF6B35]/5 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-[#FF6B35]/5 blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-md bg-white/6 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-md bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-fade-in-scale">
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#FF6B35] flex items-center justify-center">
+        <div className="p-6 border-b border-gray-100 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#FF6B35] flex items-center justify-center shadow-lg shadow-orange-500/20">
             <Zap size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white">ServeQ</h1>
-            <p className="text-xs text-white/50">Admin Login</p>
+            <h1 className="text-lg font-bold text-[#1A1A2E]" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QATO</h1>
+            <p className="text-xs text-gray-400">Admin Login</p>
           </div>
         </div>
 
         <div className="p-6 space-y-4">
-          <h2 className="text-xl font-bold text-white">Welcome back</h2>
+          <h2 className="text-xl font-bold text-[#1A1A2E]">Welcome back</h2>
 
           {/* Google Button */}
           <button
             type="button"
             onClick={handleGoogleLogin}
             disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 h-11 rounded-xl bg-white text-gray-800 text-sm font-medium hover:bg-gray-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 h-12 rounded-xl bg-white border-1.5 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {googleLoading ? (
               <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -151,14 +151,14 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-xs text-white/40 uppercase tracking-wider">or</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-gray-100" />
+            <span className="text-xs text-gray-400 uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-gray-100" />
           </div>
 
           {/* Error */}
           {error && (
-            <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+            <p className="text-red-600 text-sm bg-red-50 border border-red-100 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -166,7 +166,7 @@ export default function LoginPage() {
           {/* Email / Password Form */}
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-sm text-white/70 mb-1.5">Email</label>
+              <label className="block text-sm text-gray-600 mb-1.5 font-medium">Email</label>
               <input
                 name="email"
                 type="email"
@@ -178,7 +178,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-white/70 mb-1.5">Password</label>
+              <label className="block text-sm text-gray-600 mb-1.5 font-medium">Password</label>
               <div className="relative">
                 <input
                   name="password"
@@ -191,7 +191,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPw((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -203,9 +203,9 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-white/50 text-sm">
+          <p className="text-center text-gray-500 text-sm">
             No account?{' '}
-            <Link to="/signup" className="text-[#FF6B35] hover:underline">
+            <Link to="/signup" className="text-[#FF6B35] font-medium hover:underline">
               Sign up free
             </Link>
           </p>

@@ -133,8 +133,8 @@ export default function CheckoutPage() {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: amountPaise,
         currency: 'INR',
-        name: restaurantLabel || 'ServeQ',
-        description: 'ServeQ Order Payment',
+        name: restaurantLabel || 'QATO',
+        description: 'QATO Order Payment',
         order_id: razorpayOrderId,
         method: { upi: true, card: false, netbanking: false, wallet: false, emi: false },
         theme: { color: '#FF6B35' },
@@ -283,7 +283,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center p-6 gap-4">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 gap-4">
         <div className="text-5xl">🛒</div>
         <h2 className="text-xl font-bold text-[#1A1A2E]">Your cart is empty</h2>
         <p className="text-gray-500 text-sm">Go back and add some delicious items!</p>
@@ -293,7 +293,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-28">
+    <div className="min-h-screen bg-white pb-28">
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-4 flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="p-1.5 rounded-xl hover:bg-gray-100 transition-colors">
           <ArrowLeft size={20} className="text-[#1A1A2E]" />
@@ -307,7 +307,7 @@ export default function CheckoutPage() {
       <div className="px-4 py-4 space-y-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-xs uppercase tracking-wide text-gray-400">Restaurant</p>
-          <p className="text-base font-bold text-[#1A1A2E] mt-1">{restaurantLabel || 'ServeQ Restaurant'}</p>
+          <p className="text-base font-bold text-[#1A1A2E] mt-1">{restaurantLabel || 'QATO Restaurant'}</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

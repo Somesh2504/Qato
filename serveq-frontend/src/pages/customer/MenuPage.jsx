@@ -67,9 +67,9 @@ export default function MenuPage() {
   });
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} — Order Online | ServeQ` : 'ServeQ — Order Online',
+    title: restaurant?.name ? `${restaurant.name} — Order Online | QATO` : 'QATO — Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on ServeQ. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -196,7 +196,7 @@ export default function MenuPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-4">
+      <div className="min-h-screen flex items-center justify-center bg-white p-4">
         <EmptyState
           icon="🍽️"
           title={error === 'Restaurant not found' ? 'Restaurant not found' : 'Could not load menu'}
@@ -210,7 +210,7 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-32">
+    <div className="min-h-screen bg-white pb-32">
       <div ref={headerRef} className="sticky top-0 z-20 bg-white shadow-sm">
         {!loading && restaurant && (
           <div className="bg-gradient-to-r from-[#1A1A2E] to-[#16213E] px-4 pt-5 pb-4">
@@ -474,12 +474,12 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install ServeQ"
+        title="Install QATO"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-600">Add ServeQ to your home screen for faster ordering.</p>
+          <p className="text-sm text-gray-600">Add QATO to your home screen for faster ordering.</p>
           <Button variant="primary" fullWidth onClick={triggerInstall} className="min-h-[44px]">
             Add to Home Screen
           </Button>
@@ -564,9 +564,9 @@ export default function MenuPage() {
   });
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} — Order Online | ServeQ` : 'ServeQ — Order Online',
+    title: restaurant?.name ? `${restaurant.name} — Order Online | QATO` : 'QATO — Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on ServeQ. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -691,7 +691,7 @@ export default function MenuPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-4">
+      <div className="min-h-screen flex items-center justify-center bg-white p-4">
         <EmptyState
           icon="🍽️"
           title={error === 'Restaurant not found' ? 'Restaurant not found' : 'Could not load menu'}
@@ -705,7 +705,7 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-32">
+    <div className="min-h-screen bg-white pb-32">
       <div ref={headerRef} className="sticky top-0 z-20 bg-white shadow-sm">
         {!loading && restaurant && (
           <div className="bg-gradient-to-r from-[#1A1A2E] to-[#16213E] px-4 pt-5 pb-4">
@@ -969,12 +969,12 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install ServeQ"
+        title="Install QATO"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-600">Add ServeQ to your home screen for faster ordering.</p>
+          <p className="text-sm text-gray-600">Add QATO to your home screen for faster ordering.</p>
           <Button variant="primary" fullWidth onClick={triggerInstall} className="min-h-[44px]">
             Add to Home Screen
           </Button>
@@ -1086,9 +1086,9 @@ export default function MenuPage() {
   const cartTotal = getTotal();
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} — Order Online | ServeQ` : 'ServeQ — Order Online',
+    title: restaurant?.name ? `${restaurant.name} — Order Online | QATO` : 'QATO — Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on ServeQ. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -1188,7 +1188,7 @@ export default function MenuPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-4">
+      <div className="min-h-screen flex items-center justify-center bg-white p-4">
         <EmptyState
           icon="🍽️"
           title={error === 'Restaurant not found' ? 'Restaurant not found' : 'Could not load menu'}
@@ -1202,7 +1202,7 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-32">
+    <div className="min-h-screen bg-white pb-32">
       <div ref={headerRef} className="sticky top-0 z-20 bg-white shadow-sm">
         {!loading && restaurant && (
           <div className="bg-gradient-to-r from-[#1A1A2E] to-[#16213E] px-4 pt-5 pb-4">
@@ -1466,12 +1466,12 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install ServeQ"
+        title="Install QATO"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-600">Add ServeQ to your home screen for faster ordering.</p>
+          <p className="text-sm text-gray-600">Add QATO to your home screen for faster ordering.</p>
           <Button variant="primary" fullWidth onClick={triggerInstall} className="min-h-[44px]">
             Add to Home Screen
           </Button>
@@ -1561,9 +1561,9 @@ export default function MenuPage() {
   });
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} — Order Online | ServeQ` : 'ServeQ — Order Online',
+    title: restaurant?.name ? `${restaurant.name} — Order Online | QATO` : 'QATO — Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on ServeQ. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -1689,7 +1689,7 @@ export default function MenuPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-4">
+      <div className="min-h-screen flex items-center justify-center bg-white p-4">
         <EmptyState
           icon="🍽️"
           title={error === 'Restaurant not found' ? 'Restaurant not found' : 'Could not load menu'}
@@ -1703,7 +1703,7 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-32">
+    <div className="min-h-screen bg-white pb-32">
       <div ref={headerRef} className="sticky top-0 z-20 bg-white shadow-sm">
         {!loading && restaurant && (
           <div className="bg-gradient-to-r from-[#1A1A2E] to-[#16213E] px-4 pt-5 pb-4">
@@ -1973,12 +1973,12 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install ServeQ"
+        title="Install QATO"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-600">Add ServeQ to your home screen for faster ordering.</p>
+          <p className="text-sm text-gray-600">Add QATO to your home screen for faster ordering.</p>
           <Button
             variant="primary"
             fullWidth
@@ -2098,9 +2098,9 @@ export default function MenuPage() {
   const cartTotal = getTotal();
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} — Order Online | ServeQ` : 'ServeQ — Order Online',
+    title: restaurant?.name ? `${restaurant.name} — Order Online | QATO` : 'QATO — Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on ServeQ. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -2186,7 +2186,7 @@ export default function MenuPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-4">
+      <div className="min-h-screen flex items-center justify-center bg-white p-4">
         <EmptyState
           icon="🍽️"
           title={error === 'Restaurant not found' ? 'Restaurant not found' : 'Could not load menu'}
@@ -2200,7 +2200,7 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-32">
+    <div className="min-h-screen bg-white pb-32">
       <div ref={headerRef} className="sticky top-0 z-20 bg-white shadow-sm">
         {!loading && restaurant && (
           <div className="bg-gradient-to-r from-[#1A1A2E] to-[#16213E] px-4 pt-5 pb-4">
@@ -2450,13 +2450,13 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install ServeQ"
+        title="Install QATO"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
           <p className="text-sm text-gray-600">
-            Add ServeQ to your home screen for faster ordering.
+            Add QATO to your home screen for faster ordering.
           </p>
           <Button variant="primary" fullWidth onClick={triggerInstall} className="min-h-[44px]">
             Add to Home Screen
@@ -2561,13 +2561,13 @@ export default function MenuPage() {
   const cartTotal = getTotal();
 
   if (error) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA]">
+    <div className="min-h-screen flex items-center justify-center bg-white">
       <EmptyState icon="🍽️" title={error} description="Check the URL and try again." />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-32">
+    <div className="min-h-screen bg-white pb-32">
       {/* Hero Header * /}
       <div ref={headerRef} className="sticky top-0 z-20 bg-white shadow-sm">
         {/* Restaurant banner * /}

@@ -64,7 +64,7 @@ export default function OrderQueuePage() {
       try {
         supabaseRef.current = getSupabaseClient();
       } catch {
-        setScreenError('We couldn’t connect to ServeQ right now. Please try again.');
+        setScreenError('We couldn’t connect to QATO right now. Please try again.');
         setLoading(false);
         return;
       }
@@ -385,7 +385,7 @@ export default function OrderQueuePage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8F9FA]">
+    <div className="flex h-screen overflow-hidden bg-white">
       <AdminSidebar />
 
       <main className="flex-1 overflow-y-auto">

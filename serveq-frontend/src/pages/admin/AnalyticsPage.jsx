@@ -284,7 +284,7 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8F9FA]">
+    <div className="flex h-screen overflow-hidden bg-white">
       <AdminSidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 md:px-6 py-4">

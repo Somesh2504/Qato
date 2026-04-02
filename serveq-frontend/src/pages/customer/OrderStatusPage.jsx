@@ -288,8 +288,8 @@ export default function OrderStatusPage() {
   }, [queueAhead]);
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} — Order Online | ServeQ` : 'ServeQ — Order Online',
-    description: restaurant?.name ? `Track your order from ${restaurant.name} on ServeQ.` : undefined,
+    title: restaurant?.name ? `${restaurant.name} — Order Online | QATO` : 'QATO — Order Online',
+    description: restaurant?.name ? `Track your order from ${restaurant.name} on QATO.` : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
 
@@ -323,7 +323,7 @@ export default function OrderStatusPage() {
   // Guard: if supabase failed to configure, we still render a useful error screen.
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] p-4 md:p-6 space-y-4">
+      <div className="min-h-screen bg-white p-4 md:p-6 space-y-4">
         <div className="bg-gradient-to-br from-[#1A1A2E] to-[#16213E] rounded-3xl p-5">
           <div className="skeleton h-8 w-56 rounded mb-3" />
           <div className="skeleton h-10 w-72 rounded-full" />
@@ -339,7 +339,7 @@ export default function OrderStatusPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center p-6 gap-4 text-center">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 gap-4 text-center">
         <div className="text-5xl">😕</div>
         <h2 className="text-xl font-bold text-[#1A1A2E]">We couldn’t load your order</h2>
         <p className="text-sm text-gray-500">Please check your connection and try again.</p>
@@ -359,7 +359,7 @@ export default function OrderStatusPage() {
   const disclaimerText = 'Estimated time set by restaurant. May vary.';
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-6">
+    <div className="min-h-screen bg-white pb-6">
       {/* TOP SECTION */}
       <div className="px-4 pt-7 pb-6 text-center bg-gradient-to-br from-[#1A1A2E] to-[#16213E]">
         <h1 className="text-3xl font-extrabold text-white tracking-tight">
@@ -464,7 +464,7 @@ export default function OrderStatusPage() {
                   </p>
                 </div>
 
-                <div className="mt-2 p-3 rounded-2xl bg-[#F8F9FA] border border-gray-100">
+                <div className="mt-2 p-3 rounded-2xl bg-white border border-gray-100">
                   <p className="text-xs text-gray-500">Restaurant</p>
                   <p className="text-sm font-bold text-[#1A1A2E] mt-1">{restaurant?.name || '—'}</p>
                   <p className="text-xs text-gray-400 mt-1">{restaurant?.address || ''}</p>

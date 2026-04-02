@@ -67,7 +67,7 @@ export default function SettingsPage() {
   const inputCls = 'w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FF6B35] focus:ring-1 focus:ring-[#FF6B35]/20 transition-all';
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8F9FA]">
+    <div className="flex h-screen overflow-hidden bg-white">
       <AdminSidebar />
       <main className="flex-1 overflow-y-auto">
         {/* Header */}

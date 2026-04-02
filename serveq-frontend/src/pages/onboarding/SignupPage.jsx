@@ -416,26 +416,26 @@ export default function SignupPage() {
   };
 
   const progressPct = Math.round((step / TOTAL_STEPS) * 100);
-  const cardCls = `w-full max-w-2xl bg-white/6 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl`;
-  const inputCls = `w-full h-11 rounded-xl bg-white/10 border border-white/20 px-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[#FF6B35]`;
+  const cardCls = `w-full max-w-2xl bg-white border border-gray-100 rounded-2xl shadow-xl animate-fade-in-scale`;
+  const inputCls = `w-full h-12 rounded-xl bg-white border-1.5 border-gray-200 px-3 text-sm text-[#1A1A2E] placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B35] focus:ring-2 focus:ring-[#FF6B35]/10 transition-all`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1A1A2E] via-[#16213E] to-[#0F3460] p-4 md:p-6 flex items-center justify-center">
+    <div className="min-h-screen bg-white p-4 md:p-6 flex items-center justify-center">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-[#FF6B35]/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-[#FF6B35]/10 blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-[#FF6B35]/5 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-[#FF6B35]/5 blur-3xl" />
       </div>
 
       <div className={cardCls}>
         {/* Header + progress */}
-        <div className="p-5 md:p-6 border-b border-white/10">
+        <div className="p-5 md:p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#FF6B35] flex items-center justify-center">
+            <div className="w-11 h-11 rounded-xl bg-[#FF6B35] flex items-center justify-center shadow-lg shadow-orange-500/20">
               <Zap size={20} className="text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">ServeQ Onboarding</h1>
-              <p className="text-xs text-white/50">
+              <h1 className="text-xl font-bold text-[#1A1A2E]" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QATO Onboarding</h1>
+              <p className="text-xs text-gray-400">
                 Step {step} of {TOTAL_STEPS}
                 {isGoogleFlow && step === 2 && (
                   <span className="ml-2 text-[#FF6B35]">· Signed in with Google</span>
@@ -444,38 +444,48 @@ export default function SignupPage() {
             </div>
           </div>
           <div className="mt-4">
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-2 bg-[#FF6B35] rounded-full transition-all duration-300"
+                className="h-2 bg-[#FF6B35] rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
           </div>
-          {error && <p className="text-red-300 text-sm mt-3">{error}</p>}
+          {error && <p className="text-red-600 text-sm mt-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
         </div>
 
-        <div className="p-5 md:p-6 text-white">
+        <div className="p-5 md:p-6 text-[#1A1A2E]">
           {/* ── STEP 1: Account Creation ─────────────────────────── */}
           {step === 1 && (
             <form onSubmit={handleCreateAccount} className="space-y-4">
-              <h2 className="text-lg font-bold">Step 1 — Account Creation</h2>
-              <Button
+              <h2 className="text-lg font-bold text-[#1A1A2E]">Step 1 — Account Creation</h2>
+              <button
                 type="button"
-                variant="outline"
-                loading={googleLoading}
                 onClick={handleGoogleSignup}
+                disabled={googleLoading}
+                className="w-full flex items-center justify-center gap-3 h-12 rounded-xl bg-white border-1.5 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Continue with Google
-              </Button>
+                {googleLoading ? (
+                  <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.64 9.2045c0-.638-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9087C16.6582 14.0518 17.64 11.8264 17.64 9.2045z" fill="#4285F4"/>
+                    <path d="M9 18c2.43 0 4.4673-.8064 5.9564-2.1818l-2.9087-2.2582c-.8064.54-1.8382.8591-3.0477.8591-2.3427 0-4.3282-1.5818-5.0373-3.7109H.9573v2.3318C2.4382 15.9832 5.4818 18 9 18z" fill="#34A853"/>
+                    <path d="M3.9627 10.71c-.18-.54-.2827-1.1168-.2827-1.71s.1027-1.17.2827-1.71V4.9582H.9573A8.9962 8.9962 0 000 9c0 1.4523.3477 2.8268.9573 4.0418L3.9627 10.71z" fill="#FBBC05"/>
+                    <path d="M9 3.5791c1.3214 0 2.5077.4545 3.4405 1.346l2.5814-2.5814C13.4627.8918 11.4255 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.9627 7.29C4.6718 5.1609 6.6573 3.5791 9 3.5791z" fill="#EA4335"/>
+                  </svg>
+                )}
+                {googleLoading ? 'Redirecting to Google…' : 'Continue with Google'}
+              </button>
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-xs text-white/40 uppercase tracking-wider">or</span>
-                <div className="flex-1 h-px bg-white/10" />
+                <div className="flex-1 h-px bg-gray-100" />
+                <span className="text-xs text-gray-400 uppercase tracking-wider">or</span>
+                <div className="flex-1 h-px bg-gray-100" />
               </div>
               <div>
-                <label className="block text-sm text-white/70 mb-1.5">Owner Email</label>
+                <label className="block text-sm text-gray-600 mb-1.5 font-medium">Owner Email</label>
                 <div className="relative">
-                  <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                  <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -486,7 +496,7 @@ export default function SignupPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-white/70 mb-1.5">Password</label>
+                <label className="block text-sm text-gray-600 mb-1.5 font-medium">Password</label>
                 <div className="relative">
                   <input
                     value={password}
@@ -498,7 +508,7 @@ export default function SignupPage() {
                   <button
                     type="button"
                     onClick={() => setShowPw((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
@@ -517,14 +527,14 @@ export default function SignupPage() {
             <form onSubmit={handleSaveProfileStep} className="space-y-4">
               <h2 className="text-lg font-bold">Step 2 — Restaurant Profile</h2>
               {isGoogleFlow && (
-                <div className="text-xs text-white/50 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                  Signed in as <span className="text-white/80">{authUserEmail}</span> via Google.
+                <div className="text-xs text-gray-500 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
+                  Signed in as <span className="text-[#1A1A2E] font-medium">{authUserEmail}</span> via Google.
                 </div>
               )}
               <div>
-                <label className="block text-sm text-white/70 mb-1.5">Shop Name</label>
+                <label className="block text-sm text-gray-600 mb-1.5 font-medium">Shop Name</label>
                 <div className="relative">
-                  <Store size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                  <Store size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     value={shopName}
                     onChange={(e) => setShopName(e.target.value)}
@@ -532,13 +542,13 @@ export default function SignupPage() {
                     placeholder="Biryani Palace"
                   />
                 </div>
-                <p className="text-xs text-white/50 mt-1.5">Your menu link: {menuLink}</p>
+                <p className="text-xs text-gray-400 mt-1.5">Your menu link: {menuLink}</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-white/70 mb-1.5">Phone</label>
+                  <label className="block text-sm text-gray-600 mb-1.5 font-medium">Phone</label>
                   <div className="relative">
-                    <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                    <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
@@ -548,7 +558,7 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm text-white/70 mb-1.5">Slug</label>
+                  <label className="block text-sm text-gray-600 mb-1.5 font-medium">Slug</label>
                   <input
                     value={slug}
                     onChange={(e) => setSlug(generateSlug(e.target.value))}
@@ -558,9 +568,9 @@ export default function SignupPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-white/70 mb-1.5">Address</label>
+                <label className="block text-sm text-gray-600 mb-1.5 font-medium">Address</label>
                 <div className="relative">
-                  <MapPin size={15} className="absolute left-3 top-3 text-white/40" />
+                  <MapPin size={15} className="absolute left-3 top-3 text-gray-400" />
                   <textarea
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
@@ -572,7 +582,7 @@ export default function SignupPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-white/70 mb-1.5">Opening</label>
+                  <label className="block text-sm text-gray-600 mb-1.5 font-medium">Opening</label>
                   <input
                     type="time"
                     value={openingTime}
@@ -581,7 +591,7 @@ export default function SignupPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-white/70 mb-1.5">Closing</label>
+                  <label className="block text-sm text-gray-600 mb-1.5 font-medium">Closing</label>
                   <input
                     type="time"
                     value={closingTime}
@@ -591,13 +601,13 @@ export default function SignupPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-white/70 mb-1.5">Logo (optional)</label>
+                <label className="block text-sm text-gray-600 mb-1.5 font-medium">Logo (optional)</label>
                 <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-xl bg-white/10 overflow-hidden flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center">
                     {logoUrl ? (
                       <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
                     ) : (
-                      <ImagePlus size={18} className="text-white/40" />
+                      <ImagePlus size={18} className="text-gray-400" />
                     )}
                   </div>
                   <input
@@ -638,7 +648,7 @@ export default function SignupPage() {
           {step === 3 && (
             <div className="space-y-4">
               <h2 className="text-lg font-bold">Step 3 — Menu Setup Wizard</h2>
-              <div className="bg-white/8 border border-white/10 rounded-xl p-3 space-y-2">
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
                 <p className="text-sm font-medium">Let's add your first category</p>
                 <div className="flex gap-2">
                   <input
@@ -660,8 +670,8 @@ export default function SignupPage() {
                       onClick={() => setSelectedDraftCategory(c.id)}
                       className={`px-3 py-1.5 rounded-full text-xs border ${
                         selectedDraftCategory === c.id
-                          ? 'bg-[#FF6B35] border-[#FF6B35]'
-                          : 'bg-white/10 border-white/20'
+                          ? 'bg-[#FF6B35] border-[#FF6B35] text-white'
+                          : 'bg-gray-100 border-gray-200 text-gray-700'
                       }`}
                     >
                       {c.name}
@@ -670,7 +680,7 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div className="bg-white/8 border border-white/10 rounded-xl p-3 space-y-2">
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
                 <p className="text-sm font-medium">Add your first item</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <input
@@ -705,7 +715,7 @@ export default function SignupPage() {
                       type="button"
                       onClick={() => setMenuItemVeg(true)}
                       className={`px-3 py-1.5 rounded-lg text-xs ${
-                        menuItemVeg ? 'bg-green-600 text-white' : 'bg-white/10 text-white/70'
+                        menuItemVeg ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       Veg
@@ -714,7 +724,7 @@ export default function SignupPage() {
                       type="button"
                       onClick={() => setMenuItemVeg(false)}
                       className={`px-3 py-1.5 rounded-lg text-xs ${
-                        !menuItemVeg ? 'bg-red-600 text-white' : 'bg-white/10 text-white/70'
+                        !menuItemVeg ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       Non-Veg
@@ -729,14 +739,14 @@ export default function SignupPage() {
                   {draftItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between text-sm bg-white/8 rounded-lg px-2.5 py-1.5"
+                      className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-2.5 py-1.5"
                     >
                       <span>
                         {item.name} · {formatIndianPrice(item.price)}
                       </span>
                       <button
                         onClick={() => removeDraftItem(item.id)}
-                        className="text-red-300 hover:text-red-200"
+                        className="text-red-500 hover:text-red-600"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -745,7 +755,7 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div className="text-xs text-white/50">
+              <div className="text-xs text-gray-400">
                 Progress: {draftCategories.length} categories · {draftItems.length} items
               </div>
 
@@ -769,17 +779,17 @@ export default function SignupPage() {
           {step === 4 && (
             <div className="space-y-4">
               <h2 className="text-lg font-bold">Step 4 — Go Live!</h2>
-              <div className="bg-white/8 border border-white/10 rounded-xl p-3 space-y-2 text-sm">
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2 text-sm">
                 <p>
-                  <span className="text-white/60">Restaurant:</span>{' '}
+                  <span className="text-gray-500">Restaurant:</span>{' '}
                   {createdRestaurant?.name || shopName}
                 </p>
                 <p>
-                  <span className="text-white/60">Slug:</span>{' '}
+                  <span className="text-gray-500">Slug:</span>{' '}
                   {createdRestaurant?.slug || slug}
                 </p>
                 <p>
-                  <span className="text-white/60">Items:</span>{' '}
+                  <span className="text-gray-500">Items:</span>{' '}
                   {createdRestaurant?.itemsCount ?? draftItems.length}
                 </p>
               </div>
@@ -808,9 +818,9 @@ export default function SignupPage() {
           )}
         </div>
 
-        <div className="px-5 pb-5 md:px-6 md:pb-6 text-center text-sm text-white/50">
+        <div className="px-5 pb-5 md:px-6 md:pb-6 text-center text-sm text-gray-500">
           Already have an account?{' '}
-          <Link to="/login" className="text-[#FF6B35]">
+          <Link to="/login" className="text-[#FF6B35] font-medium hover:underline">
             Sign in
           </Link>
         </div>

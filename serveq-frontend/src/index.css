@@ -8,13 +8,13 @@
   --color-success: #22C55E;
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
-  --color-surface: #F8F9FA;
-  --color-surface-dark: #F1F3F5;
+  --color-surface: #FFFFFF;
+  --color-surface-dark: #FAFAFA;
 
   --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
-  --radius-card: 12px;
-  --radius-button: 8px;
+  --radius-card: 16px;
+  --radius-button: 12px;
   --radius-badge: 999px;
 }
 
@@ -35,7 +35,7 @@ html, body {
 
 body {
   margin: 0;
-  background-color: #F8F9FA;
+  background-color: #FFFFFF;
   color: #1A1A2E;
 }
 
@@ -44,26 +44,58 @@ input, textarea, select {
   font-size: 16px;
 }
 
-/* Scrollbar */
+/* ─── Global smooth transitions ─────────────────────────────────────────── */
+a, button, input, textarea, select {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* All links get smooth hover by default */
+a:hover {
+  transition: all 0.2s ease;
+}
+
+/* All buttons - smooth press effect */
+button {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Cards and containers */
+.bg-white {
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+}
+
+/* Input focus transitions */
+input:focus, textarea:focus, select:focus {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F3F5;
+  background: #FFFFFF;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #E2E8F0;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
 
-/* Custom animations */
+/* ─── Keyframes ──────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 @keyframes slideUp {
   from { transform: translateY(100%); }
@@ -72,6 +104,14 @@ input, textarea, select {
 @keyframes slideDown {
   from { transform: translateY(-100%); }
   to { transform: translateY(0); }
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }
@@ -89,12 +129,40 @@ input, textarea, select {
   60% { transform: scale(1.05); opacity: 1; }
   100% { transform: scale(1); }
 }
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+@keyframes scaleIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(255,107,53,0.2); }
+  50% { box-shadow: 0 0 20px rgba(255,107,53,0.4); }
+}
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
+/* ─── Animation utilities ─────────────────────────────────────────────── */
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out both;
+  animation: fadeIn 0.4s ease-out both;
+}
+.animate-fade-in-scale {
+  animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .animate-slide-up {
   animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.animate-slide-in-right {
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .animate-pulse-soft {
   animation: pulse-soft 1.5s ease-in-out infinite;
@@ -102,27 +170,46 @@ input, textarea, select {
 .animate-bounce-in {
   animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+.animate-wiggle {
+  animation: wiggle 2s ease-in-out infinite;
+}
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+.animate-page-enter {
+  animation: pageEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
-/* Skeleton shimmer */
+/* Staggered animation delays */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* ─── Skeleton shimmer ───────────────────────────────────────────────── */
 .skeleton {
-  background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%);
+  background: linear-gradient(90deg, #F1F5F9 25%, #FAFAFA 50%, #F1F5F9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
-/* Bottom sheet backdrop */
+/* ─── Bottom sheet backdrop ──────────────────────────────────────────── */
 .bottom-sheet-backdrop {
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
 }
 
-/* Focus ring */
+/* ─── Focus ring ──────────────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid #FF6B35;
   outline-offset: 2px;
 }
 
-/* Veg/NonVeg dots */
+/* ─── Veg/NonVeg dots ────────────────────────────────────────────────── */
 .veg-dot {
   width: 10px;
   height: 10px;
@@ -138,4 +225,42 @@ input, textarea, select {
   background-color: #EF4444;
   border: 2px solid #DC2626;
   flex-shrink: 0;
+}
+
+/* ─── Orange accent classes (QATO theme) ─────────────────────────────── */
+.qato-card {
+  background: #FFFFFF;
+  border: 1px solid #F0F0F0;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.qato-card:hover {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+
+.qato-input {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  border: 1.5px solid #E5E7EB;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #1A1A2E;
+  background: #FFFFFF;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.qato-input:focus {
+  outline: none;
+  border-color: #FF6B35;
+  box-shadow: 0 0 0 3px rgba(255,107,53,0.1);
+}
+.qato-input::placeholder {
+  color: #9CA3AF;
+}
+
+/* ─── Page enter animation applied to main containers ────────────────── */
+main {
+  animation: pageEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

@@ -5,6 +5,8 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import OfflineBanner from './components/ui/OfflineBanner';
 
 // Pages
+import LandingPage from './pages/LandingPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import SignupPage from './pages/onboarding/SignupPage';
 import LoginPage from './pages/onboarding/LoginPage';
 import AuthCallback from './pages/onboarding/AuthCallback';
@@ -40,8 +42,9 @@ export default function App() {
     <>
       {!isOnline ? <OfflineBanner onRetry={() => window.location.reload()} /> : null}
       <Routes>
-        {/* Root redirect */}
-        <Route path="/" element={<Navigate to="/signup" replace />} />
+        {/* Landing page */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
         {/* Onboarding */}
         <Route path="/signup" element={<SignupRoute />} />
@@ -67,7 +70,7 @@ export default function App() {
 
         {/* 404 fallback */}
         <Route path="*" element={
-          <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#F8F9FA]">
+          <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white">
             <div className="text-6xl">🍽️</div>
             <h1 className="text-2xl font-bold text-[#1A1A2E]">Page Not Found</h1>
             <p className="text-gray-500">The page you're looking for doesn't exist.</p>
