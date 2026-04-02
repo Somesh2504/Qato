@@ -33,7 +33,8 @@ export default function AuthCallback() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
       if (sessionError || !session) {
-        toast.error('Google login failed. Please try again.');
+        const msg = sessionError?.message || 'Google login failed. Please try again.';
+        toast.error(msg);
         navigate('/login');
         return;
       }
@@ -49,8 +50,13 @@ export default function AuthCallback() {
         .maybeSingle(); // use maybeSingle so it doesn't throw on 0 rows
 
       if (fetchError) {
-        toast.error('Failed to load restaurant data.');
-        navigate('/login');
+        // If restaurants table is missing or blocked (RLS), don't dead-end:
+        // continue to onboarding so the user can still create their restaurant.
+        console.error('Failed to load restaurant data:', fetchError);
+        const msg = fetchError?.message || 'Failed to load restaurant data.';
+        toast.error(msg);
+        sessionStorage.setItem('serveq_google_session', JSON.stringify({ token, email: userEmail }));
+        navigate('/signup?via=google', { replace: true });
         return;
       }
 
@@ -60,11 +66,10 @@ export default function AuthCallback() {
         navigate('/admin/orders');
       } else {
         // First-time Google user — they need to complete onboarding.
-        // Store the token temporarily so SignupPage step 2 can use it.
-        sessionStorage.setItem('google_oauth_token', token);
-        sessionStorage.setItem('google_oauth_email', userEmail);
+        // Stash session in a single key that SignupPage expects.
+        sessionStorage.setItem('serveq_google_session', JSON.stringify({ token, email: userEmail }));
         toast.success('Account created! Let\'s set up your restaurant.');
-        navigate('/signup?step=2&source=google');
+        navigate('/signup?via=google');
       }
     };
 

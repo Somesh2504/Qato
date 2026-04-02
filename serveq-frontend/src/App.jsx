@@ -7,12 +7,14 @@ import OfflineBanner from './components/ui/OfflineBanner';
 // Pages
 import SignupPage from './pages/onboarding/SignupPage';
 import LoginPage from './pages/onboarding/LoginPage';
+import AuthCallback from './pages/onboarding/AuthCallback';
 import OrderQueuePage from './pages/admin/OrderQueuePage';
 import MenuManagementPage from './pages/admin/MenuManagementPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import MenuPage from './pages/customer/MenuPage';
 import CheckoutPage from './pages/customer/CheckoutPage';
+import PaymentResultPage from './pages/customer/PaymentResultPage';
 import OrderStatusPage from './pages/customer/OrderStatusPage';
 
 // Protected route wrapper
@@ -43,10 +45,12 @@ export default function App() {
 
         {/* Onboarding */}
         <Route path="/signup" element={<SignupRoute />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Customer (public) */}
         <Route path="/menu/:slug" element={<MenuPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/payment-result" element={<PaymentResultPage />} />
         <Route path="/order/:orderId" element={<OrderStatusPage />} />
 
         {/* Admin auth */}

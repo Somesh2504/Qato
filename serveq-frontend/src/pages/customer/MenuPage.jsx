@@ -88,7 +88,7 @@ export default function MenuPage() {
       const { data: restaurantData, error: restErr } = await supabase
         .from('restaurants')
         .select(
-          'id,name,slug,logo_url,address,phone,cuisine_type,opening_time,closing_time,is_accepting_orders,default_prep_time'
+          'id,name,slug,logo_url,address,phone,opening_time,closing_time,is_accepting_orders,default_prep_time'
         )
         .eq('slug', slug)
         .single();
@@ -106,7 +106,7 @@ export default function MenuPage() {
         supabase
           .from('menu_items')
           .select(
-            'id,category_id,name,description,price,is_veg,photo_url,image_url,prep_time_minutes,is_available,is_bestseller,sort_order'
+            'id,category_id,name,description,price,is_veg,photo_url,is_available,sort_order'
           )
           .eq('restaurant_id', restaurantId)
           .eq('is_available', true)

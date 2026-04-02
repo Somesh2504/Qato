@@ -6,6 +6,7 @@ import { getSupabaseClient } from '../../lib/supabaseClient';
 import { formatIndianPrice } from '../../utils/helpers';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
+import api from '../../utils/api';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -193,7 +194,7 @@ export default function CheckoutPage() {
       } catch {
         // ignore storage errors
       }
-      navigate(`/order/${order.id}`);
+      navigate(`/payment-result?status=success&orderId=${order.id}`, { replace: true });
     } catch (error) {
       setFailure(error.message || 'Could not place cash order', handleCashOrder, 'Retry Place Order');
     } finally {
@@ -218,12 +219,10 @@ export default function CheckoutPage() {
       await ensureRazorpaySdk();
       const supabase = getSupabaseClient();
 
-      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('create-razorpay-order', {
-        body: { amount: total, restaurant_id: restaurantId, currency: 'INR' },
-      });
+      const { data: edgeData } = await api.post('/payments/create-order', { amount: total, restaurant_id: restaurantId });
 
-      if (edgeError || !edgeData?.razorpay_order_id) {
-        throw new Error(edgeError?.message || 'Could not create payment order');
+      if (!edgeData?.razorpay_order_id) {
+        throw new Error('Could not create payment order');
       }
 
       const tokenNumber = await getNextTokenNumber(supabase, restaurantId);
@@ -242,17 +241,19 @@ export default function CheckoutPage() {
         amountPaise: edgeData.amount || Math.round(total * 100),
       });
 
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          status: 'pending',
-          payment_status: 'paid',
-          razorpay_payment_id: paymentResponse.razorpay_payment_id || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', provisionalOrder.id);
+      // Call backend to verify signature and update status securely
+      const { data: verifyData } = await api.post('/payments/verify', {
+        razorpay_order_id: paymentResponse.razorpay_order_id || edgeData.razorpay_order_id,
+        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+        razorpay_signature: paymentResponse.razorpay_signature,
+        order_id: provisionalOrder.id,
+      });
 
-      if (updateError) throw new Error(updateError.message || 'Payment succeeded but order update failed');
+      if (!verifyData?.success) {
+        // Payment verification failed — show failure page
+        navigate(`/payment-result?status=failed&orderId=${provisionalOrder.id}`, { replace: true });
+        return;
+      }
 
       clearCart();
       toast.success('Payment successful');
@@ -261,7 +262,7 @@ export default function CheckoutPage() {
       } catch {
         // ignore storage errors
       }
-      navigate(`/order/${provisionalOrder.id}`);
+      navigate(`/payment-result?status=success&orderId=${provisionalOrder.id}`, { replace: true });
     } catch (error) {
       if (provisionalOrderId) {
         try {

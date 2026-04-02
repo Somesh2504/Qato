@@ -34,6 +34,7 @@ export default function SignupPage() {
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
 
@@ -115,32 +116,113 @@ export default function SignupPage() {
   const next = () => setStep((s) => Math.min(TOTAL_STEPS, s + 1));
   const prev = () => setStep((s) => Math.max(1, s - 1));
 
+  const handleGoogleSignup = async () => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { error: oauthErr } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+      if (oauthErr) throw oauthErr;
+      // Redirect happens automatically.
+    } catch (err) {
+      toast.error(err?.message || 'Google sign-in failed');
+      setGoogleLoading(false);
+    }
+  };
+
   // ── Step 1: Create account (email/password only) ─────────────────────────
   const handleCreateAccount = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!email || !password) return setError('Email & password required');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) return setError('Email & password required');
     if (password.length < 8) return setError('Password must be at least 8 characters');
 
     setLoading(true);
     try {
       const supabase = getSupabaseClient();
 
-      const { error: signUpError } = await supabase.auth.signUp({ email, password });
-      if (signUpError) throw signUpError;
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (signUpError) {
+        const m = signUpError.message?.toLowerCase() || '';
+        const looksLikeExisting =
+          m.includes('already') || m.includes('registered') || m.includes('exists');
+        if (looksLikeExisting) {
+          const { data: existingLogin, error: existingErr } = await supabase.auth.signInWithPassword({
+            email: trimmedEmail,
+            password,
+          });
+          if (existingErr) {
+            if (existingErr.message?.includes('Invalid login credentials')) {
+              throw new Error('This email is already registered. Either the password is wrong, or you need to confirm your email before continuing.');
+            }
+            throw existingErr;
+          }
+          if (!existingLogin?.session?.access_token) {
+            throw new Error('Could not sign in. Check your password or confirm your email.');
+          }
+          setAuthToken(existingLogin.session.access_token);
+          setAuthUserEmail(trimmedEmail);
+          setEmail(trimmedEmail);
+          next();
+          return;
+        }
+        throw signUpError;
+      }
 
+      // If "Confirm email" is OFF, Supabase returns a session here — use it (no second login call).
+      if (signUpData?.session?.access_token) {
+        setAuthToken(signUpData.session.access_token);
+        setAuthUserEmail(trimmedEmail);
+        setEmail(trimmedEmail);
+        next();
+        return;
+      }
+
+      // No session: usually "Confirm email" is ON, or edge cases. Try password sign-in once.
       const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({
-        email,
+        email: trimmedEmail,
         password,
       });
-      if (loginErr) throw loginErr;
+      if (loginErr) {
+        const raw = loginErr.message || '';
+        const isCredentialNoise =
+          raw.includes('Invalid login credentials') || raw.includes('Invalid email or password');
+        if (isCredentialNoise) {
+          throw new Error(
+            'We could not start a session yet. If Supabase has “Confirm email” enabled, open the link in the email we sent, then click Continue again. For local testing you can disable it under Authentication → Providers → Email.'
+          );
+        }
+        throw loginErr;
+      }
+      if (!loginData?.session?.access_token) {
+        throw new Error('No session returned. Try confirming your email or signing in.');
+      }
 
       setAuthToken(loginData.session.access_token);
-      setAuthUserEmail(email);
+      setAuthUserEmail(trimmedEmail);
+      setEmail(trimmedEmail);
       next();
     } catch (err) {
-      setError(err.message || 'Signup failed');
+      const msg = err.message || 'Signup failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -377,6 +459,19 @@ export default function SignupPage() {
           {step === 1 && (
             <form onSubmit={handleCreateAccount} className="space-y-4">
               <h2 className="text-lg font-bold">Step 1 — Account Creation</h2>
+              <Button
+                type="button"
+                variant="outline"
+                loading={googleLoading}
+                onClick={handleGoogleSignup}
+              >
+                Continue with Google
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-xs text-white/40 uppercase tracking-wider">or</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
               <div>
                 <label className="block text-sm text-white/70 mb-1.5">Owner Email</label>
                 <div className="relative">

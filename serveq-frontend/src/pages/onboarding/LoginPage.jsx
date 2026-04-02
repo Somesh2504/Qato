@@ -51,6 +51,7 @@ export default function LoginPage() {
         password: form.password,
       });
       if (authError) throw authError;
+      if (!data?.user) throw new Error('Login succeeded, but no user was returned.');
 
       const { data: restaurant, error: rErr } = await supabase
         .from('restaurants')
@@ -69,7 +70,13 @@ export default function LoginPage() {
       });
       navigate('/admin/orders');
     } catch (err) {
-      setError(err.message || 'Login failed');
+      console.error('Login failed:', err);
+      const msg =
+        err?.message ||
+        err?.error_description ||
+        'Login failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
