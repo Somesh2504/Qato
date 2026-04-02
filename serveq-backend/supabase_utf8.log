@@ -1,0 +1,25 @@
+﻿[dotenv@17.3.1] injecting env (3) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+Categories: [
+  {
+    "id": "80ecba26-9627-4d41-a6de-b3d35caf2fd2",
+    "restaurant_id": "4c481229-52c0-44a3-8df7-032e01baa5c3",
+    "name": "idly",
+    "sort_order": 0,
+    "created_at": "2026-04-02T02:56:36.150051+00:00"
+  }
+]
+Items: [
+  {
+    "id": "975379be-6825-4edb-85a4-6dc4b6fb80b9",
+    "restaurant_id": "4c481229-52c0-44a3-8df7-032e01baa5c3",
+    "category_id": "80ecba26-9627-4d41-a6de-b3d35caf2fd2",
+    "name": "ragiidly",
+    "description": null,
+    "price": 30,
+    "photo_url": null,
+    "is_veg": true,
+    "is_available": true,
+    "sort_order": 0,
+    "created_at": "2026-04-02T02:56:36.551998+00:00"
+  }
+]

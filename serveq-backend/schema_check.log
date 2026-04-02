@@ -1,0 +1,12 @@
+﻿[dotenv@17.3.1] injecting env (5) from .env -- tip: ≡ƒöÉ prevent building .env in docker: https://dotenvx.com/prebuild
+=== RESTAURANTS COLUMNS ===
+id, owner_email, name, slug, logo_url, address, phone, opening_time, closing_time, default_prep_time, is_accepting_orders, razorpay_key_id, created_at
+
+=== ORDERS COLUMNS ===
+No rows or error: null
+
+=== ORDER_ITEMS COLUMNS ===
+No rows or error: null
+
+=== TRANSACTIONS TABLE ===
+Data: null Error: {"code":"PGRST205","details":null,"hint":"Perhaps you meant the table 'public.ratings'","message":"Could not find the table 'public.transactions' in the schema cache"}

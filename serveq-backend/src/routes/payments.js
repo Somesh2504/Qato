@@ -8,11 +8,15 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Lazy-init Razorpay so server boots even when keys are empty
 let _razorpay = null;
 const getRazorpay = () => {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret || keyId.startsWith('YOUR_') || keySecret.startsWith('YOUR_')) {
+    throw new Error('Razorpay API keys are not configured. Please add valid keys to .env');
+  }
+
   if (!_razorpay) {
-    _razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });
+    _razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
   }
   return _razorpay;
 };
@@ -26,14 +30,16 @@ router.post('/create-order', async (req, res) => {
   }
 
   try {
-    // Fetch restaurant's Razorpay key (for future per-restaurant payments)
+    // Validate restaurant exists
     const { data: restaurant, error: rErr } = await supabase
       .from('restaurants')
-      .select('razorpay_key_id')
+      .select('id, name')
       .eq('id', restaurant_id)
       .single();
 
-    if (rErr || !restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+    if (rErr || !restaurant) {
+      return res.status(404).json({ error: 'Restaurant not found' });
+    }
 
     const razorpay = getRazorpay();
 
@@ -49,14 +55,17 @@ router.post('/create-order', async (req, res) => {
       currency: rpOrder.currency,
     });
   } catch (err) {
-    console.error('Create Razorpay order error:', err);
+    console.error('Create Razorpay order error:', err.message || err);
+    if (err.message && err.message.includes('not configured')) {
+      return res.status(503).json({ error: err.message });
+    }
     res.status(500).json({ error: 'Failed to create payment order' });
   }
 });
 
 // ── POST /api/payments/verify (PUBLIC) ───────────────────────────────────────
 router.post('/verify', async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id } = req.body;
 
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
     return res.status(400).json({ error: 'razorpay_order_id, razorpay_payment_id and razorpay_signature are required' });
@@ -69,23 +78,97 @@ router.post('/verify', async (req, res) => {
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
-    if (expectedSig !== razorpay_signature) {
-      return res.json({ success: false, error: 'Signature mismatch' });
+    const signatureValid = expectedSig === razorpay_signature;
+
+    // Fetch the order to get details for the transaction record
+    let orderData = null;
+    let orderItems = [];
+
+    if (order_id) {
+      const { data: od } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('id', order_id)
+        .single();
+      if (od) {
+        orderData = od;
+        orderItems = od.order_items || [];
+      }
     }
 
-    // Mark the order as paid using the razorpay_order_id stored on our order
-    const { error } = await supabase
-      .from('orders')
-      .update({
-        payment_status: 'paid',
+    // If no order_id was passed, try finding by razorpay_order_id
+    if (!orderData) {
+      const { data: od } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('razorpay_order_id', razorpay_order_id)
+        .single();
+      if (od) {
+        orderData = od;
+        orderItems = od.order_items || [];
+      }
+    }
+
+    // Build item summary for the transaction record
+    const itemSummary = orderItems.map((i) => ({
+      name: i.item_name,
+      qty: i.quantity,
+      price: i.item_price,
+    }));
+
+    if (!signatureValid) {
+      // Insert failed transaction
+      await supabase.from('transactions').insert({
+        order_id: orderData?.id || null,
+        restaurant_id: orderData?.restaurant_id || null,
+        razorpay_order_id,
         razorpay_payment_id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('razorpay_order_id', razorpay_order_id);
+        amount: orderData?.total_amount || 0,
+        currency: 'INR',
+        status: 'failed',
+        payment_method: 'upi',
+        item_summary: itemSummary,
+      }).select();
 
-    if (error) return res.status(400).json({ error: error.message });
+      return res.json({ success: false, error: 'Payment signature mismatch' });
+    }
 
-    res.json({ success: true });
+    // Signature is valid — mark the order as paid
+    if (orderData) {
+      await supabase
+        .from('orders')
+        .update({
+          payment_status: 'paid',
+          razorpay_payment_id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', orderData.id);
+    } else {
+      // Fallback: update by razorpay_order_id
+      await supabase
+        .from('orders')
+        .update({
+          payment_status: 'paid',
+          razorpay_payment_id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('razorpay_order_id', razorpay_order_id);
+    }
+
+    // Insert successful transaction record
+    await supabase.from('transactions').insert({
+      order_id: orderData?.id || null,
+      restaurant_id: orderData?.restaurant_id || null,
+      razorpay_order_id,
+      razorpay_payment_id,
+      amount: orderData?.total_amount || 0,
+      currency: 'INR',
+      status: 'paid',
+      payment_method: 'upi',
+      item_summary: itemSummary,
+    }).select();
+
+    res.json({ success: true, order_id: orderData?.id || null });
   } catch (err) {
     console.error('Payment verify error:', err);
     res.status(500).json({ error: 'Payment verification failed' });
@@ -120,6 +203,19 @@ router.post('/refund', authMiddleware, async (req, res) => {
       .single();
 
     if (error) return res.status(400).json({ error: error.message });
+
+    // Insert refund transaction
+    await supabase.from('transactions').insert({
+      order_id: orderId,
+      restaurant_id: req.restaurant_id,
+      razorpay_order_id: data?.razorpay_order_id || null,
+      razorpay_payment_id,
+      amount: data?.total_amount || 0,
+      currency: 'INR',
+      status: 'refunded',
+      payment_method: 'upi',
+      item_summary: [],
+    }).select();
 
     res.json({ success: true, refund, order: data });
   } catch (err) {
