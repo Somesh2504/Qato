@@ -124,7 +124,7 @@ export default function SignupPage() {
       const { error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `https://qato-1.onrender.com/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'select_account',
@@ -156,7 +156,7 @@ export default function SignupPage() {
         email: trimmedEmail,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `https://qato-1.onrender.com/auth/callback`,
         },
       });
       if (signUpError) {

@@ -92,7 +92,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `https://qato-1.onrender.com/auth/callback`,
           queryParams: {
             // Request offline access so refresh tokens work
             access_type: 'offline',
