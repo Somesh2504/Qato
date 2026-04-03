@@ -88,7 +88,7 @@ export default function MenuPage() {
       const { data: restaurantData, error: restErr } = await supabase
         .from('restaurants')
         .select(
-          'id,name,slug,logo_url,address,phone,opening_time,closing_time,is_accepting_orders,default_prep_time'
+          'id,name,slug,logo_url,address,phone,cuisine_type,opening_time,closing_time,is_accepting_orders,default_prep_time'
         )
         .eq('slug', slug)
         .single();
@@ -106,7 +106,7 @@ export default function MenuPage() {
         supabase
           .from('menu_items')
           .select(
-            'id,category_id,name,description,price,is_veg,photo_url,is_available,sort_order'
+            'id,category_id,name,description,price,is_veg,photo_url,image_url,prep_time_minutes,is_available,is_bestseller,sort_order'
           )
           .eq('restaurant_id', restaurantId)
           .eq('is_available', true)
@@ -129,7 +129,6 @@ export default function MenuPage() {
       setRestaurant(restaurantData);
       setCategories(categoryNames);
       setMenuItems(normalizedItems);
-
       initializeCart(restaurantId, slug, null, restaurantData.name || '');
       setActiveCategory(categoryNames[0] || '');
     } catch (e) {
@@ -171,10 +170,9 @@ export default function MenuPage() {
     return byCat;
   }, [categories, filteredItems]);
 
+  const getQuantity = (itemId) => items.find((i) => i.id === itemId)?.quantity || 0;
   const cartCount = getItemCount();
   const cartTotal = getTotal();
-
-  const getQuantity = (itemId) => items.find((i) => i.id === itemId)?.quantity || 0;
 
   const scrollToCategory = (cat) => {
     setActiveCategory(cat);
