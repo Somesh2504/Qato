@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, Leaf, Minus, Plus, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -309,7 +309,17 @@ export default function MenuPage() {
                     >
                       <div className="flex-1 p-4 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                          <span className={item.is_veg ? 'veg-dot' : 'nonveg-dot'} />
+                          <span
+                            className={`w-3 h-3 rounded-sm border-2 flex-shrink-0 flex items-center justify-center ${
+                              item.is_veg ? 'border-green-600' : 'border-red-600'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                item.is_veg ? 'bg-green-600' : 'bg-red-600'
+                              }`}
+                            />
+                          </span>
                           {item.is_bestseller && (
                             <Badge variant="warning" size="xs">
                               Γ¡É Bestseller
@@ -323,7 +333,7 @@ export default function MenuPage() {
                         ) : null}
 
                         <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                          <span className={item.is_veg ? 'text-[#22C55E]' : 'text-[#DC2626]'} style={{ fontWeight: 'bold' }}>{formatIndianPrice(item.price)}</span>
+                          <span className="font-bold text-[#FF6B35]">{formatIndianPrice(item.price)}</span>
                           {item.prep_time_minutes ? (
                             <span className="text-xs text-gray-400 flex items-center gap-1">
                               <Clock size={10} />
@@ -346,26 +356,26 @@ export default function MenuPage() {
                           {qty === 0 ? (
                             <button
                               onClick={() => handleAdd(item)}
-                              className="flex items-center gap-1 px-2 py-1 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-lg text-[10px] font-bold shadow-md hover:bg-[#FF6B35] hover:text-white transition-all active:scale-95 min-h-[32px]"
+                              className="flex items-center gap-1 px-3 py-2 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-sm font-bold shadow-md hover:bg-[#FF6B35] hover:text-white transition-all active:scale-95 min-h-[44px]"
                             >
-                              <Plus size={12} /> ADD
+                              <Plus size={14} /> ADD
                             </button>
                           ) : (
-                            <div className="flex items-center gap-1.5 bg-[#FF6B35] text-white rounded-lg px-2 py-1 shadow-md min-h-[32px]">
+                            <div className="flex items-center gap-2 bg-[#FF6B35] text-white rounded-xl px-2 py-1.5 shadow-md min-h-[44px]">
                               <button
                                 onClick={() => updateQuantity(item.id, qty - 1)}
                                 className="hover:bg-[#E55A24] rounded-lg p-0.5 transition-colors"
                                 aria-label="Decrease quantity"
                               >
-                                <Minus size={11} />
+                                <Minus size={13} />
                               </button>
-                              <span className="text-[10px] font-bold min-w-[14px] text-center">{qty}</span>
+                              <span className="text-sm font-bold min-w-[20px] text-center">{qty}</span>
                               <button
                                 onClick={() => addItem(item)}
                                 className="hover:bg-[#E55A24] rounded-lg p-0.5 transition-colors"
                                 aria-label="Increase quantity"
                               >
-                                <Plus size={11} />
+                                <Plus size={13} />
                               </button>
                             </div>
                           )}
@@ -794,7 +804,17 @@ export default function MenuPage() {
                     >
                       <div className="flex-1 p-4 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                          <span className={item.is_veg ? 'veg-dot' : 'nonveg-dot'} />
+                          <span
+                            className={`w-3 h-3 rounded-sm border-2 flex-shrink-0 flex items-center justify-center ${
+                              item.is_veg ? 'border-green-600' : 'border-red-600'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                item.is_veg ? 'bg-green-600' : 'bg-red-600'
+                              }`}
+                            />
+                          </span>
                           {item.is_bestseller && (
                             <Badge variant="warning" size="xs">
                               Γ¡É Bestseller
@@ -1281,7 +1301,17 @@ export default function MenuPage() {
                     >
                       <div className="flex-1 p-4 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                          <span className={item.is_veg ? 'veg-dot' : 'nonveg-dot'} />
+                          <span
+                            className={`w-3 h-3 rounded-sm border-2 flex-shrink-0 flex items-center justify-center ${
+                              item.is_veg ? 'border-green-600' : 'border-red-600'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                item.is_veg ? 'bg-green-600' : 'bg-red-600'
+                              }`}
+                            />
+                          </span>
                           {item.is_bestseller && (
                             <Badge variant="warning" size="xs">
                               Γ¡É Bestseller
@@ -1772,7 +1802,17 @@ export default function MenuPage() {
                     >
                       <div className="flex-1 p-4 min-w-0">
                         <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                          <span className={item.is_veg ? 'veg-dot' : 'nonveg-dot'} />
+                          <span
+                            className={`w-3 h-3 rounded-sm border-2 flex-shrink-0 flex items-center justify-center ${
+                              item.is_veg ? 'border-green-600' : 'border-red-600'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                item.is_veg ? 'bg-green-600' : 'bg-red-600'
+                              }`}
+                            />
+                          </span>
                           {item.is_bestseller && (
                             <Badge variant="warning" size="xs">
                               Γ¡É Bestseller
