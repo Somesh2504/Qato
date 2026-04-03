@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertCircle, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { ArrowLeft, AlertCircle, CheckCircle2, Circle, Loader2, UtensilsCrossed, Package } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { getSupabaseClient } from '../../lib/supabaseClient';
 import { formatIndianPrice } from '../../utils/helpers';
@@ -13,6 +13,7 @@ export default function CheckoutPage() {
   const { items, restaurantId, restaurantName, getTotal, getItemCount, clearCart } = useCart();
   const [restaurantLabel, setRestaurantLabel] = useState(restaurantName || '');
   const [paymentOption, setPaymentOption] = useState('upi');
+  const [orderType, setOrderType] = useState('eat');
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [retryLabel, setRetryLabel] = useState('');
@@ -85,6 +86,7 @@ export default function CheckoutPage() {
     tokenNumber,
     paymentType,
     paymentStatus,
+    orderTypeValue = 'eat',
     razorpayOrderId = null,
     razorpayPaymentId = null,
   }) => {
@@ -96,6 +98,7 @@ export default function CheckoutPage() {
         status: 'pending',
         payment_type: paymentType,
         payment_status: paymentStatus,
+        order_type: orderTypeValue,
         total_amount: total,
         razorpay_order_id: razorpayOrderId,
         razorpay_payment_id: razorpayPaymentId,
@@ -186,6 +189,7 @@ export default function CheckoutPage() {
         tokenNumber,
         paymentType: 'cash',
         paymentStatus: 'pending',
+        orderTypeValue: orderType,
       });
       clearCart();
       toast.success('Order placed successfully');
@@ -232,6 +236,7 @@ export default function CheckoutPage() {
         tokenNumber,
         paymentType: 'upi',
         paymentStatus: 'pending',
+        orderTypeValue: orderType,
         razorpayOrderId: edgeData.razorpay_order_id,
       });
       provisionalOrderId = provisionalOrder.id;
@@ -342,6 +347,33 @@ export default function CheckoutPage() {
               <span className="font-bold text-[#1A1A2E]">Final Total</span>
               <span className="font-bold text-[#FF6B35] text-lg">{formatIndianPrice(total)}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Eat / Parcel Toggle */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <h3 className="font-semibold text-[#1A1A2E] mb-3 text-sm">Order Type</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setOrderType('eat')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                orderType === 'eat' ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
+              }`}
+            >
+              <UtensilsCrossed size={24} className={orderType === 'eat' ? 'text-[#FF6B35]' : 'text-gray-400'} />
+              <span className={`text-sm font-semibold ${orderType === 'eat' ? 'text-[#FF6B35]' : 'text-gray-600'}`}>Eat Here</span>
+              <span className="text-[10px] text-gray-400">Dine in at the restaurant</span>
+            </button>
+            <button
+              onClick={() => setOrderType('parcel')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                orderType === 'parcel' ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-200'
+              }`}
+            >
+              <Package size={24} className={orderType === 'parcel' ? 'text-[#FF6B35]' : 'text-gray-400'} />
+              <span className={`text-sm font-semibold ${orderType === 'parcel' ? 'text-[#FF6B35]' : 'text-gray-600'}`}>Parcel</span>
+              <span className="text-[10px] text-gray-400">Takeaway / pack to go</span>
+            </button>
           </div>
         </div>
 
