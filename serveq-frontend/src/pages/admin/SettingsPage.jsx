@@ -166,29 +166,6 @@ export default function SettingsPage() {
                 </div>
               </Card>
 
-              <Card>
-                <h2 className="font-semibold text-[#1A1A2E] mb-4 flex items-center gap-2">
-                  <Globe size={17} className="text-[#FF6B35]" /> Payment Settings
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">UPI ID</label>
-                    <input value={profile.upi_id} onChange={e => setProfile(p => ({ ...p, upi_id: e.target.value }))} placeholder="restaurant@upi" className={inputCls} />
-                  </div>
-                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-xl">
-                    <span className="text-sm font-medium text-gray-700">Accept Cash Payments</span>
-                    <button type="button" onClick={() => setProfile(p => ({ ...p, accepts_cash: !p.accepts_cash }))}
-                      className={`w-11 h-6 rounded-full transition-colors relative ${profile.accepts_cash ? 'bg-[#FF6B35]' : 'bg-gray-300'}`}>
-                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${profile.accepts_cash ? 'translate-x-5' : ''}`} />
-                    </button>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Tax Percentage (%)</label>
-                    <input type="number" min="0" max="30" value={profile.tax_percentage}
-                      onChange={e => setProfile(p => ({ ...p, tax_percentage: e.target.value }))} placeholder="5" className={inputCls} />
-                  </div>
-                </div>
-              </Card>
 
               <Button type="submit" variant="primary" size="lg" loading={saving} icon={<Save size={16} />}>
                 Save Changes
@@ -266,8 +243,8 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium text-gray-800">{pref.label}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{pref.desc}</p>
                     </div>
-                    <button onClick={() => toggleNotification(pref.key)} className={`w-11 h-6 rounded-full relative flex-shrink-0 mt-0.5 transition-colors ${notifications[pref.key] ? 'bg-[#FF6B35]' : 'bg-gray-300'}`}>
-                      <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notifications[pref.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    <button type="button" onClick={() => toggleNotification(pref.key)} className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors flex-shrink-0 mt-0.5 ${notifications[pref.key] ? 'bg-green-500' : 'bg-gray-300'}`}>
+                      <span className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${notifications[pref.key] ? 'translate-x-6' : 'translate-x-0'}`} />
                     </button>
                   </div>
                 ))}

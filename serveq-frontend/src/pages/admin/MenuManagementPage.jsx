@@ -13,9 +13,9 @@ const EMPTY_FORM = {
   description: '',
   price: '',
   is_veg: true,
-  is_available: true,
   category_id: '',
   photo_url: '',
+  prep_time_minutes: '',
 };
 
 export default function MenuManagementPage() {
@@ -92,6 +92,11 @@ export default function MenuManagementPage() {
 
   const addCategory = async () => {
     if (!newCategoryName.trim()) return;
+    const exists = categories.some((c) => c.name.toLowerCase() === newCategoryName.trim().toLowerCase());
+    if (exists) {
+      toast.error('A category with this name already exists');
+      return;
+    }
     const { count } = await supabaseRef.current.from('menu_categories').select('id', { count: 'exact', head: true }).eq('restaurant_id', restaurantId);
     const { data, error } = await supabaseRef.current
       .from('menu_categories')
@@ -115,6 +120,7 @@ export default function MenuManagementPage() {
         is_available: item.is_available !== false,
         category_id: item.category_id || selectedCategoryId,
         photo_url: item.photo_url || '',
+        prep_time_minutes: item.prep_time_minutes?.toString() || '',
       });
     } else {
       setEditingItem(null);
@@ -127,6 +133,13 @@ export default function MenuManagementPage() {
     e.preventDefault();
     if (!form.name.trim() || !form.price || !form.category_id) return toast.error('Name, price and category are required');
     if (form.category_id === 'NEW' && !form.new_category_name?.trim()) return toast.error('New category name is required');
+    
+    const duplicate = items.find(
+      (i) => i.category_id === (form.category_id === 'NEW' ? null : form.category_id) && 
+             i.name.toLowerCase() === form.name.trim().toLowerCase() && 
+             i.id !== editingItem?.id
+    );
+    if (duplicate) return toast.error('An item with this name already exists in this category');
     
     setSaving(true);
     let finalCategoryId = form.category_id;
@@ -152,6 +165,7 @@ export default function MenuManagementPage() {
         is_available: form.is_available,
         category_id: finalCategoryId,
         photo_url: form.photo_url || null,
+        prep_time_minutes: form.prep_time_minutes ? Number(form.prep_time_minutes) : null,
       };
 
       if (editingItem) {
@@ -213,18 +227,23 @@ export default function MenuManagementPage() {
   };
 
   const categoryActions = async (category) => {
-    const action = prompt(`Actions for "${category.name}"\nType: rename or delete`);
-    if (!action) return;
-    if (action.toLowerCase() === 'rename') {
-      const name = prompt('New category name', category.name);
-      if (!name?.trim()) return;
-      const { error } = await supabaseRef.current.from('menu_categories').update({ name: name.trim() }).eq('id', category.id).eq('restaurant_id', restaurantId);
-      if (error) toast.error('Failed to rename category');
-    }
-    if (action.toLowerCase() === 'delete') {
-      if (!confirm(`Delete "${category.name}"?`)) return;
-      const { error } = await supabaseRef.current.from('menu_categories').delete().eq('id', category.id).eq('restaurant_id', restaurantId);
-      if (error) toast.error('Failed to delete category');
+    const name = prompt('New category name', category.name);
+    if (!name?.trim()) return;
+    const { error } = await supabaseRef.current.from('menu_categories').update({ name: name.trim() }).eq('id', category.id).eq('restaurant_id', restaurantId);
+    if (error) toast.error('Failed to rename category');
+  };
+
+  const deleteCategory = async (category) => {
+    if (!confirm('Delete this category? All items in it will also be deleted.')) return;
+    try {
+      const { error: itemsErr } = await supabaseRef.current.from('menu_items').delete().eq('category_id', category.id).eq('restaurant_id', restaurantId);
+      if (itemsErr) throw itemsErr;
+      const { error: catErr } = await supabaseRef.current.from('menu_categories').delete().eq('id', category.id).eq('restaurant_id', restaurantId);
+      if (catErr) throw catErr;
+      if (selectedCategoryId === category.id) setSelectedCategoryId('');
+      toast.success('Category deleted');
+    } catch {
+      toast.error('Failed to delete category');
     }
   };
 
@@ -286,9 +305,14 @@ export default function MenuManagementPage() {
                       <p className="text-sm font-semibold text-[#1A1A2E] truncate">{c.name}</p>
                       <p className="text-xs text-gray-500">{counts.get(c.id) || 0} items</p>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); categoryActions(c); }} className="p-1 rounded-lg hover:bg-gray-100">
-                      <MoreVertical size={14} className="text-gray-400" />
-                    </button>
+                    <div className="flex gap-1">
+                      <button onClick={(e) => { e.stopPropagation(); categoryActions(c); }} className="p-1 rounded-lg hover:bg-gray-100" title="Rename Category">
+                        <MoreVertical size={14} className="text-gray-400" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); deleteCategory(c); }} className="p-1 rounded-lg hover:bg-red-50 text-red-500" title="Delete Category">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -350,7 +374,10 @@ export default function MenuManagementPage() {
                             <p className="font-semibold text-sm text-[#1A1A2E] line-clamp-2">{item.name}</p>
                             <span className={`w-3 h-3 rounded-full ${item.is_veg ? 'bg-green-500' : 'bg-red-500'}`} />
                           </div>
-                          <p className="text-sm font-bold text-[#FF6B35] mt-1">{formatIndianPrice(item.price)}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-sm font-bold text-[#FF6B35]">{formatIndianPrice(item.price)}</p>
+                            {item.prep_time_minutes && <p className="text-xs text-gray-500">~{item.prep_time_minutes} min</p>}
+                          </div>
                           <div className="mt-2 flex items-center justify-between">
                             <span className={`text-xs font-medium ${item.is_available ? 'text-green-600' : 'text-red-500'}`}>{item.is_available ? 'Available' : 'Sold out'}</span>
                             <button onClick={(e) => { e.stopPropagation(); toggleAvailability(item); }} className={`w-11 h-6 rounded-full relative ${item.is_available ? 'bg-[#FF6B35]' : 'bg-gray-300'}`}>
@@ -388,6 +415,7 @@ export default function MenuManagementPage() {
               </div>
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm" placeholder="Item name" />
               <input type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm" placeholder="Price ₹" />
+              <input type="number" min="1" value={form.prep_time_minutes} onChange={(e) => setForm((f) => ({ ...f, prep_time_minutes: e.target.value }))} className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm" placeholder="Estimated prep time (minutes)" />
               <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm resize-none" placeholder="Description" />
               <select value={form.category_id} onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))} className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm">
                 <option value="">Select category</option>

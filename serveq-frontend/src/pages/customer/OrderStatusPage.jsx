@@ -76,7 +76,7 @@ export default function OrderStatusPage() {
         emoji: '🟢',
         label: 'Ready for Pickup!',
         bg: 'bg-green-50',
-        text: 'text-green-800',
+        text: 'text-[#22C55E]',
         border: 'border-green-200',
         iconBg: 'bg-green-100',
         animation: '',

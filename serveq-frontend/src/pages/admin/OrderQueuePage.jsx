@@ -33,11 +33,9 @@ export default function OrderQueuePage() {
   const [loading, setLoading] = useState(true);
   const [screenError, setScreenError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [savingWaitIds, setSavingWaitIds] = useState({});
   const [savingStatusIds, setSavingStatusIds] = useState({});
   const [refundingIds, setRefundingIds] = useState({});
   const [cashCollectedIds, setCashCollectedIds] = useState({});
-  const [completedOpen, setCompletedOpen] = useState(true);
 
   const fetchOrders = useCallback(async () => {
     if (!restaurantId || !supabaseRef.current) return;
@@ -151,23 +149,7 @@ export default function OrderQueuePage() {
     }
   };
 
-  const saveEstimatedWait = async (orderId, value) => {
-    const parsed = Number(value);
-    if (Number.isNaN(parsed) || parsed < 0) return;
-    setSavingWaitIds((prev) => ({ ...prev, [orderId]: true }));
-    try {
-      const { error } = await supabaseRef.current
-        .from('orders')
-        .update({ estimated_wait_minutes: parsed, updated_at: new Date().toISOString() })
-        .eq('id', orderId)
-        .eq('restaurant_id', restaurantId);
-      if (error) throw error;
-    } catch {
-      toast.error('Could not save wait time');
-    } finally {
-      setSavingWaitIds((prev) => ({ ...prev, [orderId]: false }));
-    }
-  };
+
 
   const toggleCashCollected = async (orderId, checked) => {
     setCashCollectedIds((prev) => ({ ...prev, [orderId]: true }));
@@ -215,11 +197,16 @@ export default function OrderQueuePage() {
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   }, [orders]);
 
-  const completedOrders = useMemo(() => {
-    return orders
-      .filter((o) => o.status === 'done')
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }, [orders]);
+  const activeItemsSummary = useMemo(() => {
+    const counts = {};
+    activeOrders.forEach(order => {
+      (order.order_items || []).forEach(item => {
+        const name = item.item_name || item.name;
+        counts[name] = (counts[name] || 0) + item.quantity;
+      });
+    });
+    return Object.entries(counts).map(([name, qty]) => ({ name, qty }));
+  }, [activeOrders]);
 
   const totalToday = useMemo(() => {
     const revenue = (orders || [])
@@ -252,7 +239,6 @@ export default function OrderQueuePage() {
 
   const renderOrderCard = (order) => {
     const isSavingStatus = Boolean(savingStatusIds[order.id]);
-    const isSavingWait = Boolean(savingWaitIds[order.id]);
 
     return (
       <div
@@ -297,20 +283,7 @@ export default function OrderQueuePage() {
           )}
         </div>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
-          <label className="block">
-            <span className="text-xs font-medium text-gray-500">Estimated wait (mins)</span>
-            <div className="mt-1.5 relative">
-              <input
-                type="number"
-                min="0"
-                defaultValue={order.estimated_wait_minutes ?? ''}
-                onBlur={(e) => saveEstimatedWait(order.id, e.target.value)}
-                className="w-full h-11 rounded-xl border border-gray-200 px-3 pr-9 text-sm focus:outline-none focus:border-[#FF6B35]"
-              />
-              {isSavingWait && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" />}
-            </div>
-          </label>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-[auto] gap-3 items-end justify-end">
 
           <div className="flex flex-wrap gap-2">
             {order.status === 'pending' && (
@@ -326,14 +299,25 @@ export default function OrderQueuePage() {
 
             {order.status === 'preparing' && (
               <>
-                <Button
-                  size="md"
-                  className="min-h-11 px-4 bg-green-600 hover:bg-green-700"
-                  loading={isSavingStatus}
-                  onClick={() => setOrderStatus(order.id, 'done')}
-                >
-                  Mark as Done
-                </Button>
+                {order.payment_type === 'cash' ? (
+                  <Button
+                    size="md"
+                    className="min-h-11 px-4 bg-red-600 hover:bg-red-700"
+                    loading={isSavingStatus}
+                    onClick={() => setOrderStatus(order.id, 'done')}
+                  >
+                    Receive cash & mark as done
+                  </Button>
+                ) : (
+                  <Button
+                    size="md"
+                    className="min-h-11 px-4 bg-green-600 hover:bg-green-700"
+                    loading={isSavingStatus}
+                    onClick={() => setOrderStatus(order.id, 'done')}
+                  >
+                    Mark as Done
+                  </Button>
+                )}
                 <Button
                   size="md"
                   variant="outline"
@@ -355,18 +339,7 @@ export default function OrderQueuePage() {
           </div>
         </div>
 
-        {order.payment_type === 'cash' && order.status === 'done' && (
-          <label className="mt-4 inline-flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              className="w-4 h-4 accent-green-600"
-              checked={order.payment_status === 'paid'}
-              onChange={(e) => toggleCashCollected(order.id, e.target.checked)}
-              disabled={Boolean(cashCollectedIds[order.id])}
-            />
-            Cash Collected ✓
-          </label>
-        )}
+
 
         {order.payment_type === 'upi' && order.status === 'cancelled' && (
           <div className="mt-4">
@@ -392,7 +365,13 @@ export default function OrderQueuePage() {
         <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 md:px-6 py-4">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#1A1A2E]">Live Orders</h1>
+              <h1 className="text-2xl font-bold text-[#1A1A2E] flex items-center">
+                Live Orders
+                <span className="relative flex h-2.5 w-2.5 ml-3 mt-1">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                </span>
+              </h1>
               <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
                 <CalendarDays size={14} />
                 <span>{todayLabel}</span>
@@ -435,45 +414,29 @@ export default function OrderQueuePage() {
                 title="No orders yet today. Your queue will appear here."
                 description="When customers place an order, you’ll see it here instantly."
               />
-              <section>
-                <button
-                  onClick={() => setCompletedOpen((v) => !v)}
-                  className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-4 py-3"
-                >
-                  <span className="font-semibold text-[#1A1A2E]">Completed Today ({completedOrders.length})</span>
-                  <ChevronDown size={18} className={`transition-transform ${completedOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {completedOpen && (
-                  <div className="mt-3 grid grid-cols-1 xl:grid-cols-2 gap-4">
-                    {completedOrders.map(renderOrderCard)}
-                  </div>
-                )}
-              </section>
             </>
           ) : (
             <>
               <section>
                 <h2 className="text-lg font-bold text-[#1A1A2E] mb-3">Active Queue ({activeOrders.length})</h2>
+                <div className="bg-[#1A1A2E] text-white rounded-xl p-4 mb-5 shadow-sm">
+                  <span className="text-[#FF6B35] font-bold block mb-3 text-sm uppercase tracking-wider">Item Summary</span>
+                  {activeItemsSummary.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                       {activeItemsSummary.map(({name, qty}) => (
+                           <div key={name} className="flex justify-between items-center bg-white/10 px-3 py-2 rounded-lg text-sm">
+                             <span className="truncate pr-2">{name}</span>
+                             <span className="font-bold text-[#FF6B35] bg-white/10 px-2 py-0.5 rounded-md">x{qty}</span>
+                           </div>
+                       ))}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400">No items</span>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   {activeOrders.map(renderOrderCard)}
                 </div>
-              </section>
-
-              <section>
-                <button
-                  onClick={() => setCompletedOpen((v) => !v)}
-                  className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-4 py-3"
-                >
-                  <span className="font-semibold text-[#1A1A2E]">Completed Today ({completedOrders.length})</span>
-                  <ChevronDown size={18} className={`transition-transform ${completedOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {completedOpen && (
-                  <div className="mt-3 grid grid-cols-1 xl:grid-cols-2 gap-4">
-                    {completedOrders.length ? completedOrders.map(renderOrderCard) : (
-                      <div className="bg-white border border-gray-100 rounded-2xl p-4 text-sm text-gray-500">No completed orders yet.</div>
-                    )}
-                  </div>
-                )}
               </section>
             </>
           )}
