@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Fragment } from 'react';
 import { Calendar, ChevronDown, Search } from 'lucide-react';
 import {
   Bar,
@@ -288,8 +288,8 @@ export default function AnalyticsPage() {
       <AdminSidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 md:px-6 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-xl font-bold text-[#1A1A2E]">Analytics</h1>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <h1 className="text-xl md:text-2xl font-bold text-[#1A1A2E]">Analytics</h1>
             <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
               {RANGE_OPTIONS.map((opt) => (
                 <button
@@ -328,8 +328,8 @@ export default function AnalyticsPage() {
         <div className="p-4 md:p-6 space-y-6">
           {screenError ? (
             <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center shadow-sm space-y-3">
-              <div className="text-5xl">😕</div>
-              <h2 className="text-lg font-bold text-[#1A1A2E]">We couldn’t load your analytics</h2>
+              <div className="text-3xl md:text-5xl">😕</div>
+              <h2 className="text-base md:text-lg font-bold text-[#1A1A2E]">We couldn’t load your analytics</h2>
               <p className="text-sm text-gray-500">Please check your connection and try again.</p>
               <Button variant="primary" onClick={() => setRefreshTick((t) => t + 1)}>
                 Retry
@@ -338,13 +338,13 @@ export default function AnalyticsPage() {
           ) : null}
           {!loading && metrics.totalOrders === 0 ? (
             <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center shadow-sm">
-              <div className="text-4xl">📈</div>
-              <p className="mt-3 font-semibold text-[#1A1A2E]">
+              <div className="text-2xl md:text-4xl">📈</div>
+              <p className="mt-3 text-sm md:text-base font-semibold text-[#1A1A2E]">
                 Start taking orders to see your analytics here.
               </p>
             </div>
           ) : null}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {loading ? (
               <>
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -361,24 +361,25 @@ export default function AnalyticsPage() {
                 ].map((card) => (
                   <div key={card.label} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                     <p className="text-xs text-gray-500">{card.label}</p>
-                    <p className="text-2xl font-bold text-[#1A1A2E] mt-2">{card.value}</p>
+                    <p className="text-xl md:text-2xl font-bold text-[#1A1A2E] mt-2">{card.value}</p>
                   </div>
                 ))}
               </>
             )}
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm overflow-x-auto">
               <h2 className="text-base font-semibold text-[#1A1A2E] mb-3">Payment Split</h2>
-              <ResponsiveContainer width="100%" height={220}>
+              <div className="min-w-[300px]">
+                <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={paymentSplit.chart} layout="vertical" margin={{ left: 10, right: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis type="number" allowDecimals={false} />
                   <YAxis type="category" dataKey="name" />
                   <Tooltip
                     formatter={(v) => [v, 'Orders']}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0' }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '13px' }}
                   />
                   <Bar dataKey="count" radius={[8, 8, 8, 8]}>
                     <Cell fill="#F59E0B" />
@@ -386,27 +387,29 @@ export default function AnalyticsPage() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              </div>
               <div className="text-sm text-gray-600 mt-2">{paymentSplit.label}</div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                 <p className="text-xs text-gray-500">Cash Orders</p>
-                <p className="text-2xl font-bold text-amber-600 mt-1">{paymentSplit.cashCount}</p>
+                <p className="text-xl md:text-2xl font-bold text-amber-600 mt-1">{paymentSplit.cashCount}</p>
                 <p className="text-sm text-gray-600 mt-1">{formatIndianPrice(paymentSplit.cashTotal)}</p>
               </div>
               <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                 <p className="text-xs text-gray-500">UPI Orders</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">{paymentSplit.upiCount}</p>
+                <p className="text-xl md:text-2xl font-bold text-green-600 mt-1">{paymentSplit.upiCount}</p>
                 <p className="text-sm text-gray-600 mt-1">{formatIndianPrice(paymentSplit.upiTotal)}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+          <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm overflow-x-auto">
             <h2 className="text-base font-semibold text-[#1A1A2E] mb-1">When your customers order most</h2>
             <p className="text-xs text-gray-500 mb-3">Peak Hour Heatmap</p>
-            <ResponsiveContainer width="100%" height={280}>
-              <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 20 }}>
+            <div className="min-w-[500px]">
+              <ResponsiveContainer width="100%" height={350}>
+                <ScatterChart margin={{ top: 10, right: 20, bottom: 20, left: 20 }}>
                 <XAxis
                   type="number"
                   dataKey="x"
@@ -434,10 +437,11 @@ export default function AnalyticsPage() {
                   return <rect x={cx - 6} y={cy - 6} width={12} height={12} rx={2} fill={payload.fill} stroke="#F1F5F9" />;
                 }} />
               </ScatterChart>
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
               <h2 className="text-base font-semibold text-[#1A1A2E] mb-3">Top Items</h2>
               {topItems.length === 0 ? (
@@ -466,7 +470,7 @@ export default function AnalyticsPage() {
             <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
               <h2 className="text-base font-semibold text-[#1A1A2E] mb-3">Ratings Summary</h2>
               <div className="flex items-end gap-3">
-                <p className="text-4xl font-bold text-[#1A1A2E]">{ratingSummary.avg.toFixed(1)}</p>
+                <p className="text-3xl md:text-4xl font-bold text-[#1A1A2E]">{ratingSummary.avg.toFixed(1)}</p>
                 <p className="text-sm text-gray-500 mb-1">/ 5</p>
               </div>
               <div className="text-yellow-500 text-xl mt-1">
@@ -545,8 +549,8 @@ export default function AnalyticsPage() {
                     const rating = ratingsByOrderId.get(order.id);
                     const shortItems = (order.order_items || []).slice(0, 2).map((i) => `${i.quantity}x ${i.item_name}`).join(', ');
                     return (
-                      <>
-                        <tr key={order.id} className="border-b border-gray-50">
+                      <Fragment key={order.id}>
+                        <tr className="border-b border-gray-50">
                           <td className="py-2 font-semibold">#{order.token_number}</td>
                           <td className="py-2 text-gray-600">{new Date(order.created_at).toLocaleString('en-IN')}</td>
                           <td className="py-2 text-gray-700">{shortItems || '—'}</td>
@@ -578,7 +582,7 @@ export default function AnalyticsPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>

@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  Menu,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -23,10 +24,18 @@ export default function AdminSidebar() {
   const { restaurantName, email, logout } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const updateCollapsedForViewport = () => {
-      setCollapsed(window.innerWidth < 1280);
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      if (width >= 768 && width < 1280) {
+        setCollapsed(true);
+      } else if (width >= 1280) {
+        setCollapsed(false);
+      }
     };
     updateCollapsedForViewport();
     window.addEventListener('resize', updateCollapsedForViewport);
@@ -39,13 +48,26 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside
-      className={[
-        'flex flex-col bg-[#1A1A2E] text-white transition-all duration-300 ease-out flex-shrink-0',
-        'h-screen sticky top-0',
-        collapsed ? 'w-[72px]' : 'w-[240px]',
-      ].join(' ')}
-    >
+    <>
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed bottom-6 right-6 z-40 bg-[#1A1A2E] text-white p-4 rounded-full shadow-2xl active:scale-95 transition-transform"
+      >
+        <Menu size={24} />
+      </button>
+      
+      {isMobile && mobileOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
+      <aside
+        className={[
+          'flex flex-col bg-[#1A1A2E] text-white transition-all duration-300 ease-out flex-shrink-0',
+          'h-screen z-50',
+          isMobile ? 'fixed top-0 left-0' : 'sticky top-0',
+          isMobile ? (mobileOpen ? 'translate-x-0 w-[240px]' : '-translate-x-full w-[240px]') : (collapsed ? 'w-[72px] translate-x-0' : 'w-[240px] translate-x-0'),
+        ].join(' ')}
+      >
       {/* Logo */}
       <div className={[
         'flex items-center border-b border-white/10 flex-shrink-0',
@@ -54,7 +76,7 @@ export default function AdminSidebar() {
         <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#FF6B35] flex-shrink-0">
           <Zap size={18} className="text-white" />
         </div>
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <span className="text-lg font-bold tracking-tight" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QATO</span>
         )}
       </div>
@@ -67,14 +89,15 @@ export default function AdminSidebar() {
           <NavLink
             key={to}
             to={to}
+            onClick={() => { if (isMobile) setMobileOpen(false); }}
             className={({ isActive }) => [
               'flex items-center rounded-xl transition-all duration-150 group relative',
-              collapsed ? 'justify-center px-0 py-3 mx-0' : 'gap-3 px-3 py-2.5',
+              (collapsed && !isMobile) ? 'justify-center px-0 py-3 mx-0' : 'gap-3 px-3 py-2.5',
               isActive
                 ? 'bg-white/10 text-white'
                 : 'text-white/60 hover:bg-white/8 hover:text-white',
             ].filter(Boolean).join(' ')}
-            title={collapsed ? label : undefined}
+            title={(collapsed && !isMobile) ? label : undefined}
           >
             {({ isActive }) => (
               <>
@@ -83,17 +106,16 @@ export default function AdminSidebar() {
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#FF6B35]" />
                 )}
                 <NavIcon
-                  size={20}
                   className={[
-                    'flex-shrink-0 transition-colors',
+                    'w-5 h-5 md:w-6 md:h-6 flex-shrink-0 transition-colors',
                     isActive ? 'text-[#FF6B35]' : 'text-white/60 group-hover:text-white',
                   ].join(' ')}
                 />
-                {!collapsed && (
+                {(!collapsed || isMobile) && (
                   <span className="text-sm font-medium">{label}</span>
                 )}
                 {/* Tooltip when collapsed */}
-                {collapsed && (
+                {(collapsed && !isMobile) && (
                   <span className="
                     absolute left-full ml-3 px-2.5 py-1.5 bg-[#16213E] text-white text-xs
                     font-medium rounded-lg shadow-lg opacity-0 group-hover:opacity-100
@@ -127,7 +149,7 @@ export default function AdminSidebar() {
         </button>
 
         {/* Restaurant info */}
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <div className="px-3 py-2">
             <p className="text-sm font-semibold text-white truncate leading-tight">
               {restaurantName || 'My Restaurant'}
@@ -142,13 +164,13 @@ export default function AdminSidebar() {
           className={[
             'flex items-center w-full rounded-xl py-2.5 text-white/50',
             'hover:text-red-400 hover:bg-red-500/10 transition-colors group',
-            collapsed ? 'justify-center px-0' : 'gap-3 px-3',
+            (collapsed && !isMobile) ? 'justify-center px-0' : 'gap-3 px-3',
           ].join(' ')}
-          title={collapsed ? 'Logout' : undefined}
+          title={(collapsed && !isMobile) ? 'Logout' : undefined}
         >
-          <LogOut size={18} className="flex-shrink-0" />
-          {!collapsed && <span className="text-sm font-medium">Logout</span>}
-          {collapsed && (
+          <LogOut className="w-5 h-5 md:w-5 md:h-5 flex-shrink-0" />
+          {(!collapsed || isMobile) && <span className="text-sm font-medium">Logout</span>}
+          {(collapsed && !isMobile) && (
             <span className="
               absolute left-full ml-3 px-2.5 py-1.5 bg-[#16213E] text-white text-xs
               font-medium rounded-lg shadow-lg opacity-0 group-hover:opacity-100
@@ -160,5 +182,6 @@ export default function AdminSidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }

@@ -126,24 +126,39 @@ export default function MenuManagementPage() {
   const saveItem = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.price || !form.category_id) return toast.error('Name, price and category are required');
+    if (form.category_id === 'NEW' && !form.new_category_name?.trim()) return toast.error('New category name is required');
+    
     setSaving(true);
-    const payload = {
-      restaurant_id: restaurantId,
-      name: form.name.trim(),
-      description: form.description || null,
-      price: Number(form.price),
-      is_veg: form.is_veg,
-      is_available: form.is_available,
-      category_id: form.category_id,
-      photo_url: form.photo_url || null,
-      updated_at: new Date().toISOString(),
-    };
+    let finalCategoryId = form.category_id;
+
     try {
+      if (finalCategoryId === 'NEW') {
+        const { count } = await supabaseRef.current.from('menu_categories').select('id', { count: 'exact', head: true }).eq('restaurant_id', restaurantId);
+        const { data: newCat, error: catErr } = await supabaseRef.current
+          .from('menu_categories')
+          .insert({ restaurant_id: restaurantId, name: form.new_category_name.trim(), sort_order: count || 0 })
+          .select()
+          .single();
+        if (catErr) throw catErr;
+        finalCategoryId = newCat.id;
+      }
+
+      const payload = {
+        restaurant_id: restaurantId,
+        name: form.name.trim(),
+        description: form.description || null,
+        price: Number(form.price),
+        is_veg: form.is_veg,
+        is_available: form.is_available,
+        category_id: finalCategoryId,
+        photo_url: form.photo_url || null,
+      };
+
       if (editingItem) {
         const { error } = await supabaseRef.current.from('menu_items').update(payload).eq('id', editingItem.id).eq('restaurant_id', restaurantId);
         if (error) throw error;
       } else {
-        const { count } = await supabaseRef.current.from('menu_items').select('id', { count: 'exact', head: true }).eq('category_id', form.category_id).eq('restaurant_id', restaurantId);
+        const { count } = await supabaseRef.current.from('menu_items').select('id', { count: 'exact', head: true }).eq('category_id', finalCategoryId).eq('restaurant_id', restaurantId);
         const { error } = await supabaseRef.current.from('menu_items').insert({ ...payload, sort_order: count || 0 });
         if (error) throw error;
       }
@@ -160,7 +175,7 @@ export default function MenuManagementPage() {
   const softDeleteItem = async (item) => {
     const { error } = await supabaseRef.current
       .from('menu_items')
-      .update({ is_available: false, is_deleted: true, deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({ is_available: false, is_deleted: true })
       .eq('id', item.id)
       .eq('restaurant_id', restaurantId);
     if (error) {
@@ -174,7 +189,7 @@ export default function MenuManagementPage() {
   const toggleAvailability = async (item) => {
     const { error } = await supabaseRef.current
       .from('menu_items')
-      .update({ is_available: !item.is_available, updated_at: new Date().toISOString() })
+      .update({ is_available: !item.is_available })
       .eq('id', item.id)
       .eq('restaurant_id', restaurantId);
     if (error) toast.error('Failed to update availability');
@@ -233,10 +248,10 @@ export default function MenuManagementPage() {
     <div className="flex h-screen overflow-hidden bg-white">
       <AdminSidebar />
       <main className="flex-1 overflow-hidden">
-        <div className="h-full grid grid-cols-1 xl:grid-cols-[30%_70%]">
-          <section className="bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="h-full flex flex-col lg:grid lg:grid-cols-[30%_70%]">
+          <section className="bg-white border-b lg:border-b-0 lg:border-r border-gray-200 overflow-y-auto max-h-[40vh] lg:max-h-full">
             <div className="sticky top-0 bg-white border-b border-gray-100 p-4">
-              <h1 className="text-xl font-bold text-[#1A1A2E]">Categories</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-[#1A1A2E]">Categories</h1>
             </div>
             <div className="p-3 space-y-2">
               {loading ? (
@@ -296,7 +311,7 @@ export default function MenuManagementPage() {
           <section className="overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl font-bold text-[#1A1A2E]">{categories.find((c) => c.id === selectedCategoryId)?.name || 'Items'}</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-[#1A1A2E]">{categories.find((c) => c.id === selectedCategoryId)?.name || 'Items'}</h2>
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -308,7 +323,7 @@ export default function MenuManagementPage() {
             </div>
             <div className="p-4">
               {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm">
                       <div className="skeleton w-full h-24 rounded-xl" />
@@ -323,9 +338,9 @@ export default function MenuManagementPage() {
               ) : visibleItems.length === 0 ? (
                 <EmptyState icon="🍽️" title="No items" description="Add your first item in this category." actionLabel="Add Item" onAction={() => openItemDrawer()} />
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {visibleItems.map((item) => (
-                    <button key={item.id} onClick={() => openItemDrawer(item)} className="text-left bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md">
+                    <div key={item.id} onClick={() => openItemDrawer(item)} role="button" tabIndex={0} className="text-left bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md cursor-pointer transition-shadow">
                       <div className="flex gap-3">
                         <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center">
                           {item.photo_url ? <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover" /> : <span>{item.is_veg ? '🥗' : '🍗'}</span>}
@@ -344,7 +359,7 @@ export default function MenuManagementPage() {
                           </div>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -377,7 +392,18 @@ export default function MenuManagementPage() {
               <select value={form.category_id} onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))} className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm">
                 <option value="">Select category</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="NEW">+ Add New Category</option>
               </select>
+              {form.category_id === 'NEW' && (
+                <input
+                  type="text"
+                  placeholder="Enter new category name..."
+                  value={form.new_category_name || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, new_category_name: e.target.value }))}
+                  className="w-full h-11 rounded-xl border border-[#FF6B35] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B35]/20"
+                  autoFocus
+                />
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <button type="button" onClick={() => setForm((f) => ({ ...f, is_veg: true }))} className={`p-3 rounded-xl border text-sm font-medium ${form.is_veg ? 'border-green-500 text-green-600' : 'border-gray-200 text-gray-500'}`}>Veg</button>
                 <button type="button" onClick={() => setForm((f) => ({ ...f, is_veg: false }))} className={`p-3 rounded-xl border text-sm font-medium ${!form.is_veg ? 'border-red-500 text-red-600' : 'border-gray-200 text-gray-500'}`}>Non-Veg</button>

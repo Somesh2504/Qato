@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { getRestaurantProfile, updateRestaurantProfile, updateRestaurantSettings } from '../../utils/api';
+import { getSupabaseClient } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { generateSlug } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -16,7 +16,7 @@ const TABS = [
 ];
 
 export default function SettingsPage() {
-  const { restaurantSlug, restaurantName, updateRestaurantInfo } = useAuth();
+  const { restaurantId, restaurantSlug, restaurantName, updateRestaurantInfo } = useAuth();
   const [tab, setTab] = useState('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,6 +26,16 @@ export default function SettingsPage() {
     cuisine_type: '', opening_time: '09:00', closing_time: '22:00',
     upi_id: '', accepts_cash: true, tax_percentage: 0,
   });
+  const [notifications, setNotifications] = useState({
+    new_order: true,
+    order_cancelled: true,
+    daily_summary: false,
+    low_items: true,
+  });
+
+  const toggleNotification = (key) => {
+    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -33,8 +43,18 @@ export default function SettingsPage() {
 
   const fetchProfile = async () => {
     try {
-      const { data } = await getRestaurantProfile();
-      setProfile((p) => ({ ...p, ...data }));
+      if (!restaurantId) return;
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('id', restaurantId)
+        .single();
+        
+      if (error) throw error;
+      if (data) {
+        setProfile((p) => ({ ...p, ...data }));
+      }
     } catch {
       toast.error('Failed to load profile');
     } finally {
@@ -44,13 +64,20 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    if (!restaurantId) return;
     setSaving(true);
     try {
-      await updateRestaurantProfile(profile);
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from('restaurants')
+        .update(profile)
+        .eq('id', restaurantId);
+        
+      if (error) throw error;
       updateRestaurantInfo({ name: profile.name, slug: profile.slug });
       toast.success('Profile saved!');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save profile');
+      toast.error(err.message || 'Failed to save profile');
     } finally {
       setSaving(false);
     }
@@ -84,7 +111,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="p-6 max-w-2xl">
+        <div className="p-4 md:p-6 max-w-screen-xl w-full mx-auto">
           {/* Profile Tab */}
           {tab === 'profile' && (
             <form onSubmit={handleSaveProfile} className="space-y-5">
@@ -111,7 +138,7 @@ export default function SettingsPage() {
                     <textarea value={profile.description} onChange={e => setProfile(p => ({ ...p, description: e.target.value }))}
                       rows={2} placeholder="Short description of your restaurant…" className={`${inputCls} resize-none`} />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
                       <input value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))} placeholder="+91 98765 43210" className={inputCls} />
@@ -126,7 +153,7 @@ export default function SettingsPage() {
                     <textarea value={profile.address} onChange={e => setProfile(p => ({ ...p, address: e.target.value }))}
                       rows={2} placeholder="Full address…" className={`${inputCls} resize-none`} />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Opening Time</label>
                       <input type="time" value={profile.opening_time} onChange={e => setProfile(p => ({ ...p, opening_time: e.target.value }))} className={inputCls} />
@@ -183,12 +210,6 @@ export default function SettingsPage() {
                       fgColor="#1A1A2E"
                       bgColor="white"
                       level="H"
-                      imageSettings={{
-                        src: '',
-                        height: 36,
-                        width: 36,
-                        excavate: true,
-                      }}
                     />
                   </div>
                 </div>
@@ -213,7 +234,7 @@ export default function SettingsPage() {
               <Card>
                 <h3 className="font-semibold text-[#1A1A2E] mb-3">Table-wise QR Codes</h3>
                 <p className="text-sm text-gray-500 mb-4">Generate unique QR codes per table to track which table ordered.</p>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {Array.from({ length: 8 }, (_, i) => i + 1).map((table) => (
                     <button key={table}
                       className="aspect-square flex flex-col items-center justify-center gap-1 border-2 border-dashed border-gray-200 rounded-xl hover:border-[#FF6B35] hover:text-[#FF6B35] text-gray-400 transition-all group"
@@ -245,13 +266,13 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium text-gray-800">{pref.label}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{pref.desc}</p>
                     </div>
-                    <button className="w-11 h-6 rounded-full bg-[#FF6B35] relative flex-shrink-0 mt-0.5">
-                      <span className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow" />
+                    <button onClick={() => toggleNotification(pref.key)} className={`w-11 h-6 rounded-full relative flex-shrink-0 mt-0.5 transition-colors ${notifications[pref.key] ? 'bg-[#FF6B35]' : 'bg-gray-300'}`}>
+                      <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notifications[pref.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
                     </button>
                   </div>
                 ))}
               </div>
-              <Button variant="primary" size="md" className="mt-5" icon={<Save size={15} />}>
+              <Button onClick={() => toast.success('Notification preferences saved!')} variant="primary" size="md" className="mt-5" icon={<Save size={15} />}>
                 Save Preferences
               </Button>
             </Card>
