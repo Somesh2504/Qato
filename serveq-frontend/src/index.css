@@ -213,19 +213,17 @@ input:focus, textarea:focus, select:focus {
 
 /* ─── Veg/NonVeg dots ────────────────────────────────────────────────── */
 .veg-dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background-color: #22C55E;
-  border: 2px solid #16A34A;
   flex-shrink: 0;
 }
 .nonveg-dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background-color: #EF4444;
-  border: 2px solid #DC2626;
+  background-color: #DC2626;
   flex-shrink: 0;
 }
 

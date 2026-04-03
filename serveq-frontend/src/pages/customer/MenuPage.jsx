@@ -342,30 +342,30 @@ export default function MenuPage() {
                           </div>
                         )}
 
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
                           {qty === 0 ? (
                             <button
                               onClick={() => handleAdd(item)}
-                              className="flex items-center gap-1 px-2 py-1 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-lg text-[10px] font-bold shadow-md hover:bg-[#FF6B35] hover:text-white transition-all active:scale-95 min-h-[32px]"
+                              className="flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-[#FF6B35] text-[#FF6B35] rounded text-[9px] font-bold shadow-sm hover:bg-[#FF6B35] hover:text-white transition-all active:scale-95 min-h-[24px]"
                             >
-                              <Plus size={12} /> ADD
+                              <Plus size={10} /> ADD
                             </button>
                           ) : (
-                            <div className="flex items-center gap-1.5 bg-[#FF6B35] text-white rounded-lg px-2 py-1 shadow-md min-h-[32px]">
+                            <div className="flex items-center gap-1 bg-[#FF6B35] text-white rounded px-1.5 py-0.5 shadow-sm min-h-[24px]">
                               <button
                                 onClick={() => updateQuantity(item.id, qty - 1)}
-                                className="hover:bg-[#E55A24] rounded-lg p-0.5 transition-colors"
+                                className="hover:bg-[#E55A24] rounded p-0.5 transition-colors"
                                 aria-label="Decrease quantity"
                               >
-                                <Minus size={11} />
+                                <Minus size={9} />
                               </button>
-                              <span className="text-[10px] font-bold min-w-[14px] text-center">{qty}</span>
+                              <span className="text-[9px] font-bold min-w-[12px] text-center">{qty}</span>
                               <button
                                 onClick={() => addItem(item)}
-                                className="hover:bg-[#E55A24] rounded-lg p-0.5 transition-colors"
+                                className="hover:bg-[#E55A24] rounded p-0.5 transition-colors"
                                 aria-label="Increase quantity"
                               >
-                                <Plus size={11} />
+                                <Plus size={9} />
                               </button>
                             </div>
                           )}

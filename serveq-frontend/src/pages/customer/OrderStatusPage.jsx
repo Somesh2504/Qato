@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AlertCircle, ChefHat, Clock, Home, RefreshCw, Star, X } from 'lucide-react';
+import { AlertCircle, ChefHat, Clock, Home, RefreshCw, Star, X, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getSupabaseClient } from '../../lib/supabaseClient';
 import { formatIndianPrice, timeAgo } from '../../utils/helpers';
@@ -28,6 +28,7 @@ export default function OrderStatusPage() {
   const [order, setOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
   const [restaurant, setRestaurant] = useState(null);
+  const [sessionOrders, setSessionOrders] = useState([]);
   const [queueAhead, setQueueAhead] = useState(0);
   const [manualRefreshing, setManualRefreshing] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(true);
@@ -137,7 +138,7 @@ export default function OrderStatusPage() {
 
       const { data: restData, error: restErr } = await supabase
         .from('restaurants')
-        .select('name,address,logo_url')
+        .select('name,address,logo_url,slug')
         .eq('id', orderData.restaurant_id)
         .single();
 
@@ -146,6 +147,32 @@ export default function OrderStatusPage() {
         setRestaurant(null);
       } else {
         setRestaurant(restData);
+      }
+
+      // Save order to session history for multi-order tracking
+      try {
+        const HISTORY_KEY = 'qato_session_orders';
+        const existing = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        const alreadyExists = existing.some((o) => o.id === orderData.id);
+        if (!alreadyExists) {
+          existing.push({
+            id: orderData.id,
+            token_number: orderData.token_number,
+            created_at: orderData.created_at,
+            status: orderData.status,
+            total_amount: orderData.total_amount,
+            restaurant_id: orderData.restaurant_id,
+            restaurant_slug: restData?.slug || null,
+          });
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(existing));
+        }
+        // Load all session orders for this restaurant
+        const restOrders = existing
+          .filter((o) => o.restaurant_id === orderData.restaurant_id)
+          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        setSessionOrders(restOrders);
+      } catch {
+        // ignore localStorage errors
       }
 
       const items = orderData.order_items || [];
@@ -209,6 +236,21 @@ export default function OrderStatusPage() {
                 origin: { y: 0.6 },
                 colors: ['#FF6B35', '#1A1A2E', '#22C55E', '#F59E0B'],
               });
+            }
+
+            // Update session order status in localStorage
+            try {
+              const HISTORY_KEY = 'qato_session_orders';
+              const existing = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+              const updatedOrders = existing.map((o) =>
+                o.id === updated.id ? { ...o, status: nextStatus } : o
+              );
+              localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedOrders));
+              setSessionOrders((prev) =>
+                prev.map((o) => (o.id === updated.id ? { ...o, status: nextStatus } : o))
+              );
+            } catch {
+              // ignore
             }
 
             prevStatusRef.current = nextStatus;
@@ -391,6 +433,31 @@ export default function OrderStatusPage() {
           <Clock size={12} />
           Placed {timeAgo(order?.created_at)}
         </div>
+
+        {/* Order Completed Stamp */}
+        {orderStatus === 'done' && (
+          <div className="mt-4 flex justify-center animate-bounce-in">
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 24px',
+              border: '3px solid #22C55E',
+              borderRadius: '12px',
+              background: 'rgba(34, 197, 94, 0.1)',
+              transform: 'rotate(-3deg)',
+            }}>
+              <CheckCircle2 size={20} style={{ color: '#22C55E' }} />
+              <span style={{
+                color: '#22C55E',
+                fontWeight: 'bold',
+                fontSize: '16px',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+              }}>Order Completed</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* MIDDLE SECTION */}
@@ -476,13 +543,60 @@ export default function OrderStatusPage() {
 
         {/* Actions */}
         <div className="flex gap-3">
-          <Button variant="outline" fullWidth icon={<Home size={16} />} onClick={() => navigate('/')}>
+          <Button variant="outline" fullWidth icon={<Home size={16} />} onClick={() => {
+            const slug = restaurant?.slug;
+            if (slug) {
+              navigate(`/menu/${slug}`);
+            } else {
+              navigate('/');
+            }
+          }}>
             Order More
           </Button>
           <Button variant="primary" fullWidth onClick={fetchOrderDetails} icon={<RefreshCw size={16} />}>
             Refresh Status
           </Button>
         </div>
+
+        {/* Session Order History */}
+        {sessionOrders.length > 1 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 pt-4 pb-2">
+              <h3 className="text-sm font-bold text-[#1A1A2E]">Your Orders This Session</h3>
+            </div>
+            <div className="px-4 pb-4 space-y-2">
+              {sessionOrders.map((sOrder) => {
+                const isCurrentOrder = sOrder.id === orderId;
+                const statusColor = sOrder.status === 'done' ? 'text-[#22C55E]' : sOrder.status === 'cancelled' ? 'text-red-500' : 'text-yellow-600';
+                const statusLabel = sOrder.status === 'done' ? 'Completed' : sOrder.status === 'cancelled' ? 'Cancelled' : sOrder.status === 'preparing' ? 'Preparing' : 'Pending';
+                const orderTime = new Date(sOrder.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                return (
+                  <button
+                    key={sOrder.id}
+                    onClick={() => { if (!isCurrentOrder) navigate(`/order/${sOrder.id}`); }}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                      isCurrentOrder ? 'border-[#FF6B35] bg-orange-50' : 'border-gray-100 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-[#1A1A2E]">
+                        #{sOrder.token_number}
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-semibold text-[#1A1A2E]">Token #{sOrder.token_number}</p>
+                        <p className="text-[10px] text-gray-400">{orderTime}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-semibold ${statusColor}`}>{statusLabel}</span>
+                      {isCurrentOrder && <span className="text-[9px] text-[#FF6B35] font-bold">Current</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {orderStatus === 'cancelled' ? (
           <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-100 rounded-2xl p-3">
