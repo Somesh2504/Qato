@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AlertCircle, ChefHat, Clock, Home, RefreshCw, Star, X, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { Player } from '@lottiefiles/react-lottie-player';
+import chefAnimation from '../../assets/chef-making-pizza.json';
+import deliveredAnimation from '../../assets/food-delivered.json';
 import { getSupabaseClient } from '../../lib/supabaseClient';
 import { formatIndianPrice, timeAgo } from '../../utils/helpers';
 import Button from '../../components/ui/Button';
@@ -462,6 +465,17 @@ export default function OrderStatusPage() {
 
       {/* MIDDLE SECTION */}
       <div className="px-4 pt-4 space-y-4">
+        {orderStatus !== 'cancelled' && (
+          <div className="flex justify-center bg-white rounded-2xl border border-gray-100 shadow-sm p-2 mb-2">
+            <Player
+              autoplay
+              loop
+              src={orderStatus === 'done' ? deliveredAnimation : chefAnimation}
+              style={{ width: '100%', maxWidth: '250px', height: 'auto' }}
+            />
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
