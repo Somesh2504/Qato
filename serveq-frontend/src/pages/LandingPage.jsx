@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Zap, ArrowRight, ChevronRight } from 'lucide-react';
+import { Player } from '@lottiefiles/react-lottie-player';
+import scanToOrderAnimation from '../assets/scan-to-order.json';
 import './LandingPage.css';
 
 const FOOD_EMOJIS = ['🍕', '🍔', '🍜', '🥘', '🍛', '🍣', '🥗', '🍰', '🧁', '🍩', '🥐', '🌮'];
@@ -255,6 +257,15 @@ export default function LandingPage() {
             Revolutionize Your Restaurant with{' '}
             <span className="gradient-text">Smart QR Ordering</span>
           </h1>
+
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', margin: '20px 0 10px' }}>
+            <Player
+              autoplay
+              loop
+              src={scanToOrderAnimation}
+              style={{ width: '100%', maxWidth: '350px', height: 'auto' }}
+            />
+          </div>
 
           <p className="hero-subtitle">
             Transform your restaurant experience with digital menus, instant QR ordering,
