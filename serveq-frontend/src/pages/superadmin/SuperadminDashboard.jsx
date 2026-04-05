@@ -163,7 +163,7 @@ export default function SuperadminDashboard() {
             </div>
             <div>
               <h1 className="text-lg font-bold" style={{ fontFamily: "'Outfit','Inter',sans-serif" }}>
-                QATO Superadmin
+                QRAVE Superadmin
               </h1>
               <p className="text-xs text-gray-500">{currentEmail}</p>
             </div>

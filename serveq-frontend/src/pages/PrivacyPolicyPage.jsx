@@ -55,7 +55,7 @@ export default function PrivacyPolicyPage() {
             >
               <Zap size={16} />
             </div>
-            QATO
+            QRAVE
           </Link>
           <Link
             to="/"
@@ -107,7 +107,7 @@ export default function PrivacyPolicyPage() {
 
         <div style={{ color: '#444', fontSize: '0.95rem', lineHeight: 1.75 }}>
           <Section title="1. Introduction">
-            Welcome to QATO ("we", "our", or "us"). We are committed to protecting your
+            Welcome to QRAVE ("we", "our", or "us"). We are committed to protecting your
             personal information and your right to privacy. This Privacy Policy explains
             what information we collect, how we use it, and what rights you have in
             relation to it.
@@ -209,7 +209,7 @@ export default function PrivacyPolicyPage() {
           fontSize: '0.82rem',
         }}
       >
-        © {new Date().getFullYear()} QATO. All rights reserved.
+        © {new Date().getFullYear()} QRAVE. All rights reserved.
       </footer>
     </div>
   );

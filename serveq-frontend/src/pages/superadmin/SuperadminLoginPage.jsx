@@ -79,7 +79,7 @@ export default function SuperadminLoginPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900" style={{ fontFamily: "'Outfit','Inter',sans-serif" }}>
-              QATO Superadmin
+              QRAVE Superadmin
             </h1>
             <p className="text-xs text-gray-500">Restricted Access</p>
           </div>

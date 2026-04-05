@@ -126,7 +126,7 @@ export default function LoginPage() {
             <Zap size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-[#1A1A2E]" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QATO</h1>
+            <h1 className="text-lg font-bold text-[#1A1A2E]" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QRAVE</h1>
             <p className="text-xs text-gray-400">Admin Login</p>
           </div>
         </div>

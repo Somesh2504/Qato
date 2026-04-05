@@ -77,7 +77,7 @@ export default function AdminSidebar() {
           <Zap size={18} className="text-white" />
         </div>
         {(!collapsed || isMobile) && (
-          <span className="text-lg font-bold tracking-tight" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QATO</span>
+          <span className="text-lg font-bold tracking-tight" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QRAVE</span>
         )}
       </div>
 

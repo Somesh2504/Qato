@@ -333,8 +333,8 @@ export default function OrderStatusPage() {
   }, [queueAhead]);
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} — Order Online | QATO` : 'QATO — Order Online',
-    description: restaurant?.name ? `Track your order from ${restaurant.name} on QATO.` : undefined,
+    title: restaurant?.name ? `${restaurant.name} — Order Online | QRAVE` : 'QRAVE — Order Online',
+    description: restaurant?.name ? `Track your order from ${restaurant.name} on QRAVE.` : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
 

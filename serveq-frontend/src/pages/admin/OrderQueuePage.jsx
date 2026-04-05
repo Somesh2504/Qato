@@ -65,7 +65,7 @@ export default function OrderQueuePage() {
       try {
         supabaseRef.current = getSupabaseClient();
       } catch {
-        setScreenError('We couldn\u2019t connect to QATO right now. Please try again.');
+        setScreenError('We couldn\u2019t connect to QRAVE right now. Please try again.');
         setLoading(false);
         return;
       }
@@ -556,8 +556,8 @@ export default function OrderQueuePage() {
                   </p>
                   <p className={`text-xs mt-1 ${isExpired ? 'text-red-600' : 'text-amber-600'}`}>
                     {isExpired
-                      ? 'Please renew your subscription immediately to avoid service interruption. Contact the QATO team.'
-                      : 'Please renew your subscription to continue receiving orders without interruption. Contact the QATO team.'
+                      ? 'Please renew your subscription immediately to avoid service interruption. Contact the QRAVE team.'
+                      : 'Please renew your subscription to continue receiving orders without interruption. Contact the QRAVE team.'
                     }
                   </p>
                 </div>

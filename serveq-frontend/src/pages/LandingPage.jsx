@@ -1,5 +1,5 @@
 // src/pages/LandingPage.jsx
-// Brand: QATO
+// Brand: QRAVE
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Zap, ArrowRight, ChevronRight } from 'lucide-react';
@@ -53,7 +53,7 @@ const TESTIMONIALS = [
     name: 'Rajesh Kumar',
     role: 'Owner, Spice Garden',
     initials: 'RK',
-    text: 'QATO transformed how we take orders. Our efficiency went up 40% and customers love the QR experience!',
+    text: 'QRAVE transformed how we take orders. Our efficiency went up 40% and customers love the QR experience!',
   },
   {
     name: 'Priya Sharma',
@@ -146,7 +146,7 @@ export default function LandingPage() {
             <div className="nav-logo-icon">
               <Zap size={20} />
             </div>
-            QATO
+            QRAVE
           </Link>
 
           <ul className="nav-links">
@@ -244,7 +244,7 @@ export default function LandingPage() {
 
         <div className="hero-content">
           <div className="hero-qato-badge" style={{marginBottom: '20px'}}>
-            <span style={{fontFamily:"'Outfit','Inter',sans-serif",fontSize:'clamp(3rem,8vw,5rem)',fontWeight:800,color:'#FF6B35',letterSpacing:'-0.03em',lineHeight:1,display:'block',textAlign:'center'}}>QATO</span>
+            <span style={{fontFamily:"'Outfit','Inter',sans-serif",fontSize:'clamp(3rem,8vw,5rem)',fontWeight:800,color:'#FF6B35',letterSpacing:'-0.03em',lineHeight:1,display:'block',textAlign:'center'}}>QRAVE</span>
             <span style={{display:'block',textAlign:'center',fontSize:'0.85rem',color:'#888',fontWeight:500,marginTop:'4px',letterSpacing:'0.1em',textTransform:'uppercase'}}>Smart Food Ordering</span>
           </div>
 
@@ -389,22 +389,22 @@ export default function LandingPage() {
           </div>
 
           <div className="pricing-card scroll-animate animate-scale-in delay-200">
-            <div className="pricing-badge">Most Popular</div>
+            <div className="pricing-badge">Full Premium Access</div>
             <div className="pricing-amount">
-              Free <span>/ forever</span>
+              14-Day <span>/ Free Trial</span>
             </div>
-            <p className="pricing-desc">Perfect for getting started with QATO ordering</p>
+            <p className="pricing-desc">Test all QRAVE features in your restaurant before you decide.</p>
 
             <ul className="pricing-features">
               {[
                 'Unlimited QR code menus',
                 'Real-time order dashboard',
-                'Up to 100 menu items',
-                'Payment integration (Razorpay)',
-                'Basic analytics & reports',
-                'Email support',
+                'UPI & Cash payments',
+                'Advanced analytics & reports',
+                'Priority support access',
                 'Mobile-optimized menus',
                 'Customer rating system',
+                'No credit card required',
               ].map((feat) => (
                 <li key={feat}>
                   <span className="pricing-check">✓</span>
@@ -414,7 +414,7 @@ export default function LandingPage() {
             </ul>
 
             <button className="pricing-cta" onClick={() => navigate('/signup')}>
-              Start Free Today
+              Start Free Trial
               <ArrowRight size={18} style={{ marginLeft: 8, verticalAlign: 'middle' }} />
             </button>
           </div>
@@ -430,7 +430,7 @@ export default function LandingPage() {
             <div className="section-eyebrow">💬 Testimonials</div>
             <h2 className="section-title">Loved by Restaurant Owners</h2>
             <p className="section-desc">
-              See what restaurant owners across India have to say about QATO.
+              See what restaurant owners across India have to say about QRAVE.
             </p>
           </div>
 
@@ -465,7 +465,7 @@ export default function LandingPage() {
           <h2 className="cta-title">Ready to Transform Your Restaurant?</h2>
           <p className="cta-desc">
             Join 500+ restaurant owners who have already switched to smart
-            QR ordering with QATO. Set up in minutes, completely free.
+            QR ordering with QRAVE. Set up in minutes, completely free.
           </p>
           <Link to="/signup" className="cta-btn">
             Register Your Restaurant
@@ -488,10 +488,10 @@ export default function LandingPage() {
                 >
                   <Zap size={16} />
                 </div>
-                QATO
+                QRAVE
               </div>
               <p>
-                QATO — Smart QR-based food ordering platform for Indian restaurants.
+                QRAVE — Smart QR-based food ordering platform for Indian restaurants.
                 Scan, order, and enjoy without the wait.
               </p>
             </div>
@@ -543,7 +543,7 @@ export default function LandingPage() {
           </div>
 
           <div className="footer-bottom">
-            <p>© {new Date().getFullYear()} QATO. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} QRAVE. All rights reserved.</p>
             <div className="footer-social">
               <a href="#" aria-label="Twitter" title="Twitter">𝕏</a>
               <a href="#" aria-label="Instagram" title="Instagram">📷</a>

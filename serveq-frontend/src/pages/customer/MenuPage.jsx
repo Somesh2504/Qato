@@ -68,9 +68,9 @@ export default function MenuPage() {
   });
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QATO` : 'QATO ΓÇö Order Online',
+    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QRAVE` : 'QRAVE ΓÇö Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QRAVE. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -522,12 +522,12 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install QATO"
+        title="Install QRAVE"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-600">Add QATO to your home screen for faster ordering.</p>
+          <p className="text-sm text-gray-600">Add QRAVE to your home screen for faster ordering.</p>
           <Button variant="primary" fullWidth onClick={triggerInstall} className="min-h-[44px]">
             Add to Home Screen
           </Button>
@@ -612,9 +612,9 @@ export default function MenuPage() {
   });
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QATO` : 'QATO ΓÇö Order Online',
+    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QRAVE` : 'QRAVE ΓÇö Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QRAVE. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -1007,12 +1007,12 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install QATO"
+        title="Install QRAVE"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-600">Add QATO to your home screen for faster ordering.</p>
+          <p className="text-sm text-gray-600">Add QRAVE to your home screen for faster ordering.</p>
           <Button variant="primary" fullWidth onClick={triggerInstall} className="min-h-[44px]">
             Add to Home Screen
           </Button>
@@ -1124,9 +1124,9 @@ export default function MenuPage() {
   const cartTotal = getTotal();
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QATO` : 'QATO ΓÇö Order Online',
+    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QRAVE` : 'QRAVE ΓÇö Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QRAVE. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -1494,12 +1494,12 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install QATO"
+        title="Install QRAVE"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-600">Add QATO to your home screen for faster ordering.</p>
+          <p className="text-sm text-gray-600">Add QRAVE to your home screen for faster ordering.</p>
           <Button variant="primary" fullWidth onClick={triggerInstall} className="min-h-[44px]">
             Add to Home Screen
           </Button>
@@ -1589,9 +1589,9 @@ export default function MenuPage() {
   });
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QATO` : 'QATO ΓÇö Order Online',
+    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QRAVE` : 'QRAVE ΓÇö Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QRAVE. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -1991,12 +1991,12 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install QATO"
+        title="Install QRAVE"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-600">Add QATO to your home screen for faster ordering.</p>
+          <p className="text-sm text-gray-600">Add QRAVE to your home screen for faster ordering.</p>
           <Button
             variant="primary"
             fullWidth
@@ -2116,9 +2116,9 @@ export default function MenuPage() {
   const cartTotal = getTotal();
 
   useSeoForCustomer({
-    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QATO` : 'QATO ΓÇö Order Online',
+    title: restaurant?.name ? `${restaurant.name} ΓÇö Order Online | QRAVE` : 'QRAVE ΓÇö Order Online',
     description: restaurant?.name
-      ? `Order online from ${restaurant.name} on QATO. Fast pickup and transparent wait times.`
+      ? `Order online from ${restaurant.name} on QRAVE. Fast pickup and transparent wait times.`
       : undefined,
     ogImageUrl: restaurant?.logo_url || undefined,
   });
@@ -2468,13 +2468,13 @@ export default function MenuPage() {
       <BottomSheet
         isOpen={promptOpen}
         onClose={() => setPromptOpen(false)}
-        title="Install QATO"
+        title="Install QRAVE"
         maxHeight="60vh"
         showHandle={false}
       >
         <div className="p-4 space-y-3">
           <p className="text-sm text-gray-600">
-            Add QATO to your home screen for faster ordering.
+            Add QRAVE to your home screen for faster ordering.
           </p>
           <Button variant="primary" fullWidth onClick={triggerInstall} className="min-h-[44px]">
             Add to Home Screen

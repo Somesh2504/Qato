@@ -442,7 +442,7 @@ export default function SignupPage() {
               <Zap size={20} className="text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-[#1A1A2E]" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QATO Onboarding</h1>
+              <h1 className="text-xl font-bold text-[#1A1A2E]" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QRAVE Onboarding</h1>
               <p className="text-xs text-gray-400">
                 Step {step} of {TOTAL_STEPS}
                 {isGoogleFlow && step === 2 && (
@@ -664,7 +664,7 @@ export default function SignupPage() {
                     name: 'Free Trial',
                     price: '₹0',
                     period: '14 days',
-                    features: ['Digital QR Menu', 'Live Order Queue', 'Cash Payments', 'Basic Support'],
+                    features: ['14 Days Full Access', 'Digital QR Menu', 'UPI & Cash Payments', 'Analytics & Reports'],
                     color: 'border-gray-200',
                     accent: 'bg-gray-100 text-gray-700',
                     badge: null,
@@ -674,7 +674,7 @@ export default function SignupPage() {
                     name: 'Starter',
                     price: '₹1,000',
                     period: '/month',
-                    features: ['Everything in Free', 'UPI Payments', 'Order Analytics', 'Email Support'],
+                    features: ['Digital QR Menu', 'Live Order Queue', 'UPI & Cash Payments', 'Email Support'],
                     color: 'border-blue-200',
                     accent: 'bg-blue-100 text-blue-700',
                     badge: null,
@@ -684,7 +684,7 @@ export default function SignupPage() {
                     name: 'Premium',
                     price: '₹1,500',
                     period: '/month',
-                    features: ['Everything in Starter', 'Finance Reports (CSV)', 'Priority Support', 'Custom Branding'],
+                    features: ['Everything in Starter', 'Order Analytics', 'Finance Reports (CSV)', 'Priority Support'],
                     color: 'border-purple-200',
                     accent: 'bg-purple-100 text-purple-700',
                     badge: 'Most Popular',

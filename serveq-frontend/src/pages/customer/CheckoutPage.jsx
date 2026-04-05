@@ -136,8 +136,8 @@ export default function CheckoutPage() {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: amountPaise,
         currency: 'INR',
-        name: restaurantLabel || 'QATO',
-        description: 'QATO Order Payment',
+        name: restaurantLabel || 'QRAVE',
+        description: 'QRAVE Order Payment',
         order_id: razorpayOrderId,
         method: { upi: true, card: false, netbanking: false, wallet: false, emi: false },
         theme: { color: '#FF6B35' },
@@ -312,7 +312,7 @@ export default function CheckoutPage() {
       <div className="px-4 py-4 space-y-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-xs uppercase tracking-wide text-gray-400">Restaurant</p>
-          <p className="text-base font-bold text-[#1A1A2E] mt-1">{restaurantLabel || 'QATO Restaurant'}</p>
+          <p className="text-base font-bold text-[#1A1A2E] mt-1">{restaurantLabel || 'QRAVE Restaurant'}</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
