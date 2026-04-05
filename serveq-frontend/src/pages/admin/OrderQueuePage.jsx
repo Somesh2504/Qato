@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlertTriangle,
   Bell,
   CalendarDays,
   CheckCircle,
@@ -27,7 +28,7 @@ const getTodayRange = () => {
 };
 
 export default function OrderQueuePage() {
-  const { restaurantId, restaurantName } = useAuth();
+  const { restaurantId, restaurantName, subscriptionPlan, subscriptionEndDate } = useAuth();
   const supabaseRef = useRef(null);
   const [orders, setOrders] = useState([]);
   const [newOrderIds, setNewOrderIds] = useState([]);
@@ -531,6 +532,38 @@ export default function OrderQueuePage() {
 
         {/* ─── Content ─── */}
         <div className="p-4 md:p-6 space-y-6">
+          {/* ─── Subscription Expiry Warning ─── */}
+          {(() => {
+            if (!subscriptionEndDate) return null;
+            const now = new Date();
+            const end = new Date(subscriptionEndDate);
+            const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+            if (daysLeft > 2) return null;
+            const isExpired = daysLeft < 0;
+            return (
+              <div className={`rounded-2xl border px-5 py-4 flex items-start gap-3 animate-pulse ${
+                isExpired
+                  ? 'bg-red-50 border-red-200'
+                  : 'bg-amber-50 border-amber-200'
+              }`}>
+                <AlertTriangle size={22} className={isExpired ? 'text-red-500 mt-0.5' : 'text-amber-500 mt-0.5'} />
+                <div>
+                  <p className={`font-bold text-sm ${isExpired ? 'text-red-700' : 'text-amber-700'}`}>
+                    {isExpired
+                      ? `⚠️ Your subscription (${subscriptionPlan || 'Free'}) has expired!`
+                      : `⚠️ Your subscription (${subscriptionPlan || 'Free'}) ends in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}!`
+                    }
+                  </p>
+                  <p className={`text-xs mt-1 ${isExpired ? 'text-red-600' : 'text-amber-600'}`}>
+                    {isExpired
+                      ? 'Please renew your subscription immediately to avoid service interruption. Contact the QATO team.'
+                      : 'Please renew your subscription to continue receiving orders without interruption. Contact the QATO team.'
+                    }
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
           {screenError ? (
             <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center space-y-3">
               <div className="text-5xl">😕</div>

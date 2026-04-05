@@ -23,7 +23,7 @@ import { formatIndianPrice, generateSlug } from '../../utils/helpers';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -65,8 +65,11 @@ export default function SignupPage() {
   const [authToken, setAuthToken] = useState('');
   const [authUserEmail, setAuthUserEmail] = useState('');
 
-  // Finalized summary (step 4)
+  // Finalized summary (step 5)
   const [createdRestaurant, setCreatedRestaurant] = useState(null);
+
+  // Step 3 — pricing plan
+  const [selectedPlan, setSelectedPlan] = useState('Free');
 
   // ── Detect Google OAuth redirect (step=2&via=google) ────────────────────
   const isGoogleFlow = searchParams.get('via') === 'google';
@@ -103,7 +106,7 @@ export default function SignupPage() {
   }, [shopName]);
 
   useEffect(() => {
-    if (step === 4) {
+    if (step === 5) {
       confetti({
         particleCount: 180,
         spread: 90,
@@ -335,6 +338,11 @@ export default function SignupPage() {
           logo_url: logoUrl || null,
           opening_time: openingTime,
           closing_time: closingTime,
+          subscription_plan: selectedPlan,
+          subscription_start_date: new Date().toISOString(),
+          subscription_end_date: selectedPlan === 'Free'
+            ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .select()
         .single();
@@ -393,7 +401,7 @@ export default function SignupPage() {
 
       setCreatedRestaurant({ ...restaurant, itemsCount: draftItems.length });
       setSlug(restaurant.slug);
-      setStep(4);
+      setStep(5);
     } catch (err) {
       setError(err?.message || 'Failed to complete onboarding');
     } finally {
@@ -644,10 +652,97 @@ export default function SignupPage() {
             </form>
           )}
 
-          {/* ── STEP 3: Menu Setup ──────────────────────────────── */}
+          {/* ── STEP 3: Choose Plan ──────────────────────────────── */}
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-bold">Step 3 — Menu Setup Wizard</h2>
+              <h2 className="text-lg font-bold">Step 3 — Choose Your Plan</h2>
+              <p className="text-sm text-gray-500">Select a plan to get started. You can always upgrade later.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {[
+                  {
+                    id: 'Free',
+                    name: 'Free Trial',
+                    price: '₹0',
+                    period: '14 days',
+                    features: ['Digital QR Menu', 'Live Order Queue', 'Cash Payments', 'Basic Support'],
+                    color: 'border-gray-200',
+                    accent: 'bg-gray-100 text-gray-700',
+                    badge: null,
+                  },
+                  {
+                    id: 'Starter',
+                    name: 'Starter',
+                    price: '₹1,000',
+                    period: '/month',
+                    features: ['Everything in Free', 'UPI Payments', 'Order Analytics', 'Email Support'],
+                    color: 'border-blue-200',
+                    accent: 'bg-blue-100 text-blue-700',
+                    badge: null,
+                  },
+                  {
+                    id: 'Premium',
+                    name: 'Premium',
+                    price: '₹1,500',
+                    period: '/month',
+                    features: ['Everything in Starter', 'Finance Reports (CSV)', 'Priority Support', 'Custom Branding'],
+                    color: 'border-purple-200',
+                    accent: 'bg-purple-100 text-purple-700',
+                    badge: 'Most Popular',
+                  },
+                ].map(plan => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setSelectedPlan(plan.id)}
+                    className={`relative text-left p-4 rounded-2xl border-2 transition-all ${
+                      selectedPlan === plan.id
+                        ? 'border-[#FF6B35] bg-orange-50/50 ring-2 ring-[#FF6B35]/20 shadow-lg'
+                        : `${plan.color} hover:shadow-md bg-white`
+                    }`}
+                  >
+                    {plan.badge && (
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FF6B35] text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                        {plan.badge}
+                      </span>
+                    )}
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold mb-3 ${plan.accent}`}>
+                      {plan.name}
+                    </span>
+                    <div className="flex items-baseline gap-1 mb-3">
+                      <span className="text-2xl font-extrabold text-[#1A1A2E]">{plan.price}</span>
+                      <span className="text-sm text-gray-400">{plan.period}</span>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {plan.features.map(f => (
+                        <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                          <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                    {selectedPlan === plan.id && (
+                      <div className="mt-3 flex items-center gap-1.5 text-[#FF6B35] text-xs font-bold">
+                        <CheckCircle2 size={14} /> Selected
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className="pt-2 flex items-center justify-between">
+                <Button type="button" variant="outline" onClick={prev}>
+                  Back
+                </Button>
+                <Button type="button" variant="primary" onClick={next}>
+                  Continue
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 4: Menu Setup ──────────────────────────────── */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold">Step 4 — Menu Setup Wizard</h2>
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
                 <p className="text-sm font-medium">Let's add your first category</p>
                 <div className="flex gap-2">
@@ -775,10 +870,10 @@ export default function SignupPage() {
             </div>
           )}
 
-          {/* ── STEP 4: Go Live ─────────────────────────────────── */}
-          {step === 4 && (
+          {/* ── STEP 5: Go Live ─────────────────────────────────── */}
+          {step === 5 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-bold">Step 4 — Go Live!</h2>
+              <h2 className="text-lg font-bold">Step 5 — Go Live!</h2>
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2 text-sm">
                 <p>
                   <span className="text-gray-500">Restaurant:</span>{' '}

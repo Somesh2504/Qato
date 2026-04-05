@@ -14,6 +14,9 @@ export function AuthProvider({ children }) {
   const [email, setEmail] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [supabase, setSupabase] = useState(null);
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [subscriptionPlan, setSubscriptionPlan] = useState(null);
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState(null);
 
   useEffect(() => {
     let sb = null;
@@ -47,6 +50,32 @@ export function AuthProvider({ children }) {
           setEmail(parsed.email || null);
         } else if (session?.user?.email) {
           setEmail(session.user.email);
+        }
+
+        // Check superadmin status
+        const userEmail = session?.user?.email;
+        if (userEmail) {
+          try {
+            const { data: saRow } = await sb
+              .from('superadmins')
+              .select('id')
+              .eq('email', userEmail)
+              .maybeSingle();
+            setIsSuperadmin(Boolean(saRow));
+          } catch { setIsSuperadmin(false); }
+
+          // Fetch subscription info for the restaurant owner
+          try {
+            const { data: restRow } = await sb
+              .from('restaurants')
+              .select('subscription_plan, subscription_end_date')
+              .eq('owner_email', userEmail)
+              .maybeSingle();
+            if (restRow) {
+              setSubscriptionPlan(restRow.subscription_plan || 'Free');
+              setSubscriptionEndDate(restRow.subscription_end_date || null);
+            }
+          } catch { /* non-critical */ }
         }
       } catch (err) {
         console.error('AuthContext restore error:', err);
@@ -138,6 +167,9 @@ export function AuthProvider({ children }) {
     email,
     isLoggedIn: Boolean(token),
     isLoading,
+    isSuperadmin,
+    subscriptionPlan,
+    subscriptionEndDate,
     login,
     logout,
     updateRestaurantInfo,

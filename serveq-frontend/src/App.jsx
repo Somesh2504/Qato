@@ -19,13 +19,32 @@ const MenuPage = lazy(() => import('./pages/customer/MenuPage'));
 const CheckoutPage = lazy(() => import('./pages/customer/CheckoutPage'));
 const PaymentResultPage = lazy(() => import('./pages/customer/PaymentResultPage'));
 const OrderStatusPage = lazy(() => import('./pages/customer/OrderStatusPage'));
+const SuperadminDashboard = lazy(() => import('./pages/superadmin/SuperadminDashboard'));
 
-// Protected route wrapper
+// Protected route wrapper (Restaurant Admin)
 function Protected({ children }) {
   const { isLoggedIn, isLoading, restaurantId } = useAuth();
   if (isLoading) return <LoadingSpinner fullScreen text="Loading…" />;
   if (!isLoggedIn) return <Navigate to="/login" replace />;
   if (!restaurantId) return <Navigate to="/signup" replace />;
+  return children;
+}
+
+// Superadmin protected route wrapper
+function SuperadminProtected({ children }) {
+  const { isLoggedIn, isLoading, isSuperadmin } = useAuth();
+  if (isLoading) return <LoadingSpinner fullScreen text="Loading…" />;
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  if (!isSuperadmin) return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#0f0f1a] text-white">
+      <div className="text-6xl">🔒</div>
+      <h1 className="text-2xl font-bold">Access Denied</h1>
+      <p className="text-white/50">You do not have superadmin privileges.</p>
+      <a href="/" className="px-4 py-2 bg-[#FF6B35] text-white rounded-xl font-medium hover:bg-[#E55A24] transition-colors">
+        Go Home
+      </a>
+    </div>
+  );
   return children;
 }
 
@@ -69,6 +88,10 @@ export default function App() {
           <Route path="/admin/menu" element={<Protected><MenuManagementPage /></Protected>} />
           <Route path="/admin/analytics" element={<Protected><AnalyticsPage /></Protected>} />
           <Route path="/admin/settings" element={<Protected><SettingsPage /></Protected>} />
+
+          {/* Superadmin (protected — only verified superadmins) */}
+          <Route path="/superadmin" element={<Navigate to="/superadmin/dashboard" replace />} />
+          <Route path="/superadmin/dashboard" element={<SuperadminProtected><SuperadminDashboard /></SuperadminProtected>} />
 
           {/* 404 fallback */}
           <Route path="*" element={

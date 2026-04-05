@@ -1,0 +1,387 @@
+// src/pages/superadmin/SuperadminDashboard.jsx
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  Building2,
+  Crown,
+  LogOut,
+  Plus,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Users,
+  XCircle,
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { getSupabaseClient } from '../../lib/supabaseClient';
+import Button from '../../components/ui/Button';
+import toast from 'react-hot-toast';
+
+const PLAN_COLORS = {
+  Free: 'bg-gray-100 text-gray-700',
+  Starter: 'bg-blue-100 text-blue-700',
+  Premium: 'bg-purple-100 text-purple-700',
+};
+
+function daysUntil(dateStr) {
+  if (!dateStr) return Infinity;
+  const now = new Date();
+  const end = new Date(dateStr);
+  return Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+}
+
+export default function SuperadminDashboard() {
+  const { logout, email: currentEmail } = useAuth();
+  const navigate = useNavigate();
+
+  const [restaurants, setRestaurants] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [addingAdmin, setAddingAdmin] = useState(false);
+  const [tab, setTab] = useState('restaurants'); // 'restaurants' | 'admins'
+
+  const supabase = useMemo(() => {
+    try { return getSupabaseClient(); } catch { return null; }
+  }, []);
+
+  const fetchAll = useCallback(async () => {
+    if (!supabase) return;
+    try {
+      const [{ data: rData }, { data: aData }] = await Promise.all([
+        supabase.from('restaurants').select('*').order('created_at', { ascending: false }),
+        supabase.from('superadmins').select('*').order('created_at', { ascending: true }),
+      ]);
+      setRestaurants(rData || []);
+      setAdmins(aData || []);
+    } catch (err) {
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchAll();
+    setRefreshing(false);
+  };
+
+  // ── Add Superadmin ──
+  const handleAddAdmin = async () => {
+    const email = newAdminEmail.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      toast.error('Enter a valid email');
+      return;
+    }
+    if (admins.some(a => a.email === email)) {
+      toast.error('This email is already a superadmin');
+      return;
+    }
+    setAddingAdmin(true);
+    try {
+      const { error } = await supabase.from('superadmins').insert({ email });
+      if (error) throw error;
+      toast.success(`Added ${email} as superadmin`);
+      setNewAdminEmail('');
+      await fetchAll();
+    } catch (err) {
+      toast.error(err.message || 'Failed to add admin');
+    } finally {
+      setAddingAdmin(false);
+    }
+  };
+
+  // ── Remove Superadmin ──
+  const handleRemoveAdmin = async (adminId, adminEmail) => {
+    if (adminEmail === currentEmail) {
+      toast.error("You can't remove yourself!");
+      return;
+    }
+    if (!confirm(`Remove ${adminEmail} from superadmins?`)) return;
+    try {
+      const { error } = await supabase.from('superadmins').delete().eq('id', adminId);
+      if (error) throw error;
+      toast.success(`Removed ${adminEmail}`);
+      await fetchAll();
+    } catch {
+      toast.error('Failed to remove admin');
+    }
+  };
+
+  // ── Filtered restaurants ──
+  const filtered = useMemo(() => {
+    if (!search.trim()) return restaurants;
+    const q = search.toLowerCase();
+    return restaurants.filter(
+      r => (r.name || '').toLowerCase().includes(q) ||
+           (r.owner_email || '').toLowerCase().includes(q) ||
+           (r.slug || '').toLowerCase().includes(q)
+    );
+  }, [restaurants, search]);
+
+  // ── Summary stats ──
+  const stats = useMemo(() => {
+    const total = restaurants.length;
+    const expiring = restaurants.filter(r => {
+      const d = daysUntil(r.subscription_end_date);
+      return d <= 5 && d >= 0;
+    }).length;
+    const expired = restaurants.filter(r => daysUntil(r.subscription_end_date) < 0).length;
+    const premium = restaurants.filter(r => r.subscription_plan === 'Premium').length;
+    const starter = restaurants.filter(r => r.subscription_plan === 'Starter').length;
+    return { total, expiring, expired, premium, starter };
+  }, [restaurants]);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0f0f1a] text-white">
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-20 bg-[#0f0f1a]/95 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B35] to-[#e04e1a] flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <Crown size={20} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold" style={{ fontFamily: "'Outfit','Inter',sans-serif" }}>
+                QATO Superadmin
+              </h1>
+              <p className="text-xs text-white/40">{currentEmail}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" loading={refreshing} onClick={handleRefresh}
+              className="!border-white/20 !text-white/70 hover:!bg-white/10">
+              <RefreshCw size={14} />
+              Refresh
+            </Button>
+            <button onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors">
+              <LogOut size={14} /> Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
+        {/* ── Stats Cards ── */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { label: 'Total Restaurants', value: stats.total, icon: Building2, color: 'text-[#FF6B35]' },
+            { label: 'Starter Plans', value: stats.starter, icon: Users, color: 'text-blue-400' },
+            { label: 'Premium Plans', value: stats.premium, icon: Crown, color: 'text-purple-400' },
+            { label: 'Expiring Soon', value: stats.expiring, icon: AlertTriangle, color: 'text-yellow-400' },
+            { label: 'Expired', value: stats.expired, icon: XCircle, color: 'text-red-400' },
+          ].map(s => (
+            <div key={s.label} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-4">
+              <s.icon size={18} className={s.color} />
+              <p className="text-2xl font-bold mt-2">{s.value}</p>
+              <p className="text-xs text-white/40 mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Tabs ── */}
+        <div className="flex gap-2">
+          {['restaurants', 'admins'].map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                tab === t
+                  ? 'bg-[#FF6B35] text-white shadow-lg shadow-orange-500/20'
+                  : 'bg-white/5 text-white/50 hover:bg-white/10'
+              }`}>
+              {t === 'restaurants' ? (
+                <span className="flex items-center gap-1.5"><Building2 size={14} /> Restaurants</span>
+              ) : (
+                <span className="flex items-center gap-1.5"><ShieldCheck size={14} /> Superadmins</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ──────────────── RESTAURANTS TAB ──────────────── */}
+        {tab === 'restaurants' && (
+          <>
+            {/* Search */}
+            <div className="relative max-w-md">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search by name, email, or slug…"
+                className="w-full h-11 rounded-xl bg-white/5 border border-white/10 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6B35] transition-colors"
+              />
+            </div>
+
+            {/* Table */}
+            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10 text-white/40 text-left text-xs uppercase tracking-wider">
+                      <th className="px-4 py-3">Restaurant</th>
+                      <th className="px-4 py-3">Owner Email</th>
+                      <th className="px-4 py-3">Plan</th>
+                      <th className="px-4 py-3">Ends On</th>
+                      <th className="px-4 py-3">Days Left</th>
+                      <th className="px-4 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-white/30">
+                          No restaurants found.
+                        </td>
+                      </tr>
+                    ) : filtered.map(r => {
+                      const days = daysUntil(r.subscription_end_date);
+                      const plan = r.subscription_plan || 'Free';
+                      let statusLabel = 'Active';
+                      let statusCls = 'bg-green-500/20 text-green-400';
+                      if (days < 0) {
+                        statusLabel = 'Expired';
+                        statusCls = 'bg-red-500/20 text-red-400';
+                      } else if (days <= 2) {
+                        statusLabel = 'Critical';
+                        statusCls = 'bg-red-500/20 text-red-400 animate-pulse';
+                      } else if (days <= 5) {
+                        statusLabel = 'Expiring Soon';
+                        statusCls = 'bg-yellow-500/20 text-yellow-400';
+                      }
+
+                      return (
+                        <tr key={r.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              {r.logo_url ? (
+                                <img src={r.logo_url} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/20 flex items-center justify-center text-[#FF6B35] font-bold text-xs">
+                                  {(r.name || '?')[0].toUpperCase()}
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-semibold text-white">{r.name}</p>
+                                <p className="text-xs text-white/30">/{r.slug}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-white/60">{r.owner_email}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${PLAN_COLORS[plan] || PLAN_COLORS.Free}`}>
+                              {plan}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-white/60 text-xs">
+                            {r.subscription_end_date
+                              ? new Date(r.subscription_end_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                              : '—'
+                            }
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`font-bold ${days < 0 ? 'text-red-400' : days <= 2 ? 'text-red-400' : days <= 5 ? 'text-yellow-400' : 'text-green-400'}`}>
+                              {days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${statusCls}`}>
+                              {statusLabel}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ──────────────── ADMINS TAB ──────────────── */}
+        {tab === 'admins' && (
+          <div className="space-y-4">
+            {/* Add new admin */}
+            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
+              <h3 className="text-sm font-bold text-white/70 mb-3 flex items-center gap-2">
+                <Plus size={14} /> Add New Superadmin
+              </h3>
+              <div className="flex gap-2 max-w-md">
+                <input
+                  type="email"
+                  value={newAdminEmail}
+                  onChange={e => setNewAdminEmail(e.target.value)}
+                  placeholder="admin@email.com"
+                  className="flex-1 h-11 rounded-xl bg-white/5 border border-white/10 px-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6B35] transition-colors"
+                  onKeyDown={e => e.key === 'Enter' && handleAddAdmin()}
+                />
+                <Button variant="primary" loading={addingAdmin} onClick={handleAddAdmin}>
+                  <Plus size={14} /> Add
+                </Button>
+              </div>
+              <p className="text-xs text-white/30 mt-2">
+                Only existing superadmins can add new ones. Added admins will have full access to this panel.
+              </p>
+            </div>
+
+            {/* Admin list */}
+            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-white/10">
+                <h3 className="text-sm font-bold text-white/70">Current Superadmins ({admins.length})</h3>
+              </div>
+              <div className="divide-y divide-white/5">
+                {admins.map(a => (
+                  <div key={a.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#e04e1a] flex items-center justify-center text-white font-bold text-xs">
+                        {a.email[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">{a.email}</p>
+                        <p className="text-xs text-white/30">
+                          Added {new Date(a.created_at).toLocaleDateString('en-IN')}
+                          {a.email === currentEmail && (
+                            <span className="ml-1 text-[#FF6B35]">· You</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    {a.email !== currentEmail && (
+                      <button
+                        onClick={() => handleRemoveAdmin(a.id, a.email)}
+                        className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
