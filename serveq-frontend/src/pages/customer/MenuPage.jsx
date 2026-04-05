@@ -29,9 +29,10 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('');
-  const [vegOnly, setVegOnly] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [filterType, setFilterType] = useState('all'); // 'all' | 'veg' | 'nonveg'
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
+  const [hasSessionOrders, setHasSessionOrders] = useState(false);
 
   const categoryRefs = useRef({});
   const headerRef = useRef(null);
@@ -127,11 +128,11 @@ export default function MenuPage() {
       }));
 
       setRestaurant(restaurantData);
-      setCategories(categoryNames);
+      setCategories(['All', ...categoryNames]);
       setMenuItems(normalizedItems);
 
       initializeCart(restaurantId, slug, null, restaurantData.name || '');
-      setActiveCategory(categoryNames[0] || '');
+      setActiveCategory('All');
     } catch (e) {
       setError(e?.message || 'Failed to load menu');
     } finally {
@@ -145,9 +146,21 @@ export default function MenuPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
+  useEffect(() => {
+    try {
+      if (restaurant?.id) {
+        const history = JSON.parse(localStorage.getItem('qato_session_orders') || '[]');
+        const restOrders = history.filter(o => o.restaurant_id === restaurant.id);
+        setHasSessionOrders(restOrders.length > 0);
+      }
+    } catch {}
+  }, [restaurant?.id]);
+
   const filteredItems = useMemo(() => {
     return menuItems.filter((item) => {
-      if (vegOnly && !item.is_veg) return false;
+      if (filterType === 'veg' && !item.is_veg) return false;
+      if (filterType === 'nonveg' && item.is_veg) return false;
+      if (activeCategory !== 'All' && (item.category || 'Other') !== activeCategory) return false;
       if (
         search &&
         !item.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -157,19 +170,36 @@ export default function MenuPage() {
       }
       return true;
     });
-  }, [menuItems, vegOnly, search]);
+  }, [menuItems, filterType, search, activeCategory]);
 
   const grouped = useMemo(() => {
-    const byCat = categories.reduce((acc, cat) => {
-      const catItems = filteredItems.filter((i) => i.category === cat);
+    const catsToRender = activeCategory === 'All' ? categories.filter(c => c !== 'All') : [activeCategory];
+    
+    const byCat = catsToRender.reduce((acc, cat) => {
+      const catItems = filteredItems.filter((i) => (i.category || 'Other') === cat);
       if (catItems.length > 0) acc[cat] = catItems;
       return acc;
     }, {});
 
-    const uncategorized = filteredItems.filter((i) => !i.category || !categories.includes(i.category));
-    if (uncategorized.length > 0) byCat.Other = uncategorized;
+    if (activeCategory === 'All' || activeCategory === 'Other') {
+       const uncategorized = filteredItems.filter((i) => !i.category || !categories.includes(i.category));
+       if (uncategorized.length > 0) byCat.Other = uncategorized;
+    }
     return byCat;
-  }, [categories, filteredItems]);
+  }, [categories, filteredItems, activeCategory]);
+
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    menuItems.forEach(item => {
+      if (filterType === 'veg' && !item.is_veg) return;
+      if (filterType === 'nonveg' && item.is_veg) return;
+      if (search && !item.name.toLowerCase().includes(search.toLowerCase()) && !item.description?.toLowerCase().includes(search.toLowerCase())) return;
+      
+      const c = item.category || 'Other';
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    return counts;
+  }, [menuItems, filterType, search]);
 
   const cartCount = getItemCount();
   const cartTotal = getTotal();
@@ -178,11 +208,7 @@ export default function MenuPage() {
 
   const scrollToCategory = (cat) => {
     setActiveCategory(cat);
-    const el = categoryRefs.current[cat];
-    if (!el || !headerRef.current) return;
-    const offset = headerRef.current.offsetHeight || 140;
-    const top = el.getBoundingClientRect().top + window.scrollY - offset - 12;
-    window.scrollTo({ top, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleAdd = (item) => {
@@ -215,14 +241,33 @@ export default function MenuPage() {
         {!loading && restaurant && (
           <div className="bg-gradient-to-r from-[#1A1A2E] to-[#16213E] px-4 pt-5 pb-4">
             <h1 className="text-xl font-bold text-white">{restaurant.name}</h1>
-            <div className="flex items-center gap-3 mt-1.5 text-white/60 text-xs flex-wrap">
-              {restaurant.cuisine_type && <span>{restaurant.cuisine_type}</span>}
-              {restaurant.cuisine_type && restaurant.opening_time && <span>┬╖</span>}
-              {restaurant.opening_time && (
-                <span className="flex items-center gap-1">
-                  <Clock size={11} />
-                  {restaurant.opening_time} ΓÇô {restaurant.closing_time}
-                </span>
+            <div className="flex flex-wrap items-center justify-between mt-1.5 gap-2">
+              <div className="flex items-center gap-2 text-white/60 text-xs flex-wrap">
+                {restaurant.cuisine_type && <span>{restaurant.cuisine_type}</span>}
+                {restaurant.cuisine_type && restaurant.opening_time && <span>·</span>}
+                {restaurant.opening_time && (
+                  <span className="flex items-center gap-1">
+                    <Clock size={11} />
+                    {restaurant.opening_time} – {restaurant.closing_time}
+                  </span>
+                )}
+              </div>
+              {hasSessionOrders && (
+                <button
+                  onClick={() => {
+                    try {
+                      const history = JSON.parse(localStorage.getItem('qato_session_orders') || '[]');
+                      const restOrders = history.filter(o => o.restaurant_id === restaurant?.id);
+                      if (restOrders.length > 0) {
+                        const active = restOrders.sort((a,b) => new Date(b.created_at) - new Date(a.created_at))[0];
+                        navigate(`/order/${active.id}`);
+                      }
+                    } catch {}
+                  }}
+                  className="text-white text-xs font-extrabold px-4 py-2 bg-[#FF6B35] rounded-full hover:bg-[#E55A24] transition-all flex-shrink-0 shadow-md shadow-black/20 tracking-wide"
+                >
+                  Your Orders
+                </button>
               )}
             </div>
           </div>
@@ -244,20 +289,33 @@ export default function MenuPage() {
               className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-xl text-sm focus:outline-none focus:bg-gray-50 focus:ring-1 focus:ring-[#FF6B35] transition-all min-h-[44px]"
             />
           </div>
-          <button
-            onClick={() => setVegOnly((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all flex-shrink-0 min-h-[44px] ${
-              vegOnly ? 'bg-green-50 border-green-400 text-green-700' : 'border-gray-200 text-gray-500'
-            }`}
-          >
-            <Leaf size={14} className={vegOnly ? 'text-green-600' : undefined} />
-            Veg
-          </button>
+          <div className="flex flex-col items-center justify-center flex-shrink-0 bg-gray-50 px-2.5 py-1.5 rounded-xl border border-gray-100 min-h-[44px]">
+             <div className="flex items-center gap-1.5">
+                <span className={`text-[10px] font-bold uppercase tracking-wide transition-colors ${filterType === 'veg' ? 'text-green-600' : 'text-gray-400'}`}>Veg</span>
+                <div 
+                   className="relative w-[44px] h-[22px] bg-gray-200 rounded-full cursor-pointer transition-colors shadow-inner"
+                   style={{ background: filterType === 'veg' ? '#22C55E' : filterType === 'nonveg' ? '#EF4444' : '#E5E7EB' }}
+                   onClick={() => {
+                      if (filterType === 'all') setFilterType('veg');
+                      else if (filterType === 'veg') setFilterType('nonveg');
+                      else setFilterType('all');
+                   }}
+                >
+                   <div 
+                     className="absolute top-[2px] left-[2px] w-[18px] h-[18px] bg-white rounded-full shadow border border-gray-200 transition-transform duration-300"
+                     style={{
+                        transform: filterType === 'veg' ? 'translateX(0px)' : filterType === 'all' ? 'translateX(11px)' : 'translateX(22px)'
+                     }}
+                   />
+                </div>
+                <span className={`text-[10px] font-bold uppercase tracking-wide transition-colors ${filterType === 'nonveg' ? 'text-red-500' : 'text-gray-400'}`}>Non-Veg</span>
+             </div>
+          </div>
         </div>
 
-        {!loading && Object.keys(grouped).length > 0 ? (
-          <div className="px-4 py-2 flex flex-wrap gap-2 border-b border-gray-100">
-            {Object.keys(grouped).map((cat) => (
+        {!loading && categories.length > 0 ? (
+          <div className="px-4 py-3 flex gap-2 border-b border-gray-100 overflow-x-auto no-scrollbar whitespace-nowrap">
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => scrollToCategory(cat)}
@@ -267,7 +325,7 @@ export default function MenuPage() {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {cat} ({grouped[cat].length})
+                {cat} {cat === 'All' ? '' : `(${categoryCounts[cat] || 0})`}
               </button>
             ))}
           </div>

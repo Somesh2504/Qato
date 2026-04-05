@@ -96,6 +96,9 @@ export default function OrderQueuePage() {
 
           const orderWithItems = { ...newOrder, order_items: itemsData || [] };
           setOrders((prev) => [orderWithItems, ...prev.filter((o) => o.id !== newOrder.id)]);
+
+          if (newOrder.payment_type === 'upi' && newOrder.payment_status !== 'paid') return; // Silence unpaid until they trigger an UPDATE
+
           setNewOrderIds((prev) => [newOrder.id, ...prev.filter((id) => id !== newOrder.id)]);
           setTimeout(() => {
             setNewOrderIds((prev) => prev.filter((id) => id !== newOrder.id));
@@ -118,7 +121,23 @@ export default function OrderQueuePage() {
         (payload) => {
           const updated = payload.new;
           if (!updated) return;
-          setOrders((prev) => prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)));
+          setOrders((prev) => {
+            const existing = prev.find(o => o.id === updated.id);
+            if (existing && existing.payment_type === 'upi' && existing.payment_status !== 'paid' && updated.payment_status === 'paid') {
+              setNewOrderIds((prevIds) => [updated.id, ...prevIds.filter((id) => id !== updated.id)]);
+              setTimeout(() => { setNewOrderIds((prevIds) => prevIds.filter((id) => id !== updated.id)); }, 3000);
+              toast.custom((t) => (
+                <div className={`flex items-center gap-3 px-4 py-3 bg-[#1A1A2E] text-white rounded-xl shadow-xl ${t.visible ? 'animate-bounce-in' : ''}`}>
+                  <Bell size={18} className="text-[#FF6B35]" />
+                  <div>
+                    <p className="text-sm font-semibold">UPI Payment Received! Token #{updated.token_number}</p>
+                    <p className="text-xs text-white/60">{formatIndianPrice(updated.total_amount)}</p>
+                  </div>
+                </div>
+              ), { duration: 4000 });
+            }
+            return prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o));
+          });
         }
       )
       .subscribe();
@@ -207,30 +226,30 @@ export default function OrderQueuePage() {
 
       // Find the order before updating state to know if it's cash
       const currentOrder = orders.find(o => o.id === orderId);
-      const isCashOrder = currentOrder?.payment_type === 'cash';
+      if (!currentOrder) return;
+      const isCashOrder = currentOrder.payment_type === 'cash';
 
-      // Optimistic local state update
-      let allDone = false;
-      let tokenNumber = null;
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id !== orderId) return o;
-          const updatedItems = (o.order_items || []).map((item) =>
-            item.id === orderItemId ? { ...item, is_done: true } : item
-          );
-          allDone = updatedItems.every((item) => item.is_done);
-          tokenNumber = o.token_number;
-          return { ...o, order_items: updatedItems };
-        })
+      const updatedItems = (currentOrder.order_items || []).map((item) =>
+        item.id === orderItemId ? { ...item, is_done: true } : item
       );
+      const allDone = updatedItems.every((item) => item.is_done);
+      const tokenNumber = currentOrder.token_number;
 
-      // Auto-complete order if every item is done
+      // Optimistic local state update - ATOMIC
+      setOrders((prev) => {
+        if (allDone && tokenNumber !== null && !isCashOrder) {
+          // Remove from view entirely if it's UPI and all items are done
+          return prev.filter((o) => o.id !== orderId);
+        }
+        // Otherwise just update the item to be done visually
+        return prev.map((o) => (o.id === orderId ? { ...o, order_items: updatedItems } : o));
+      });
+
+      // Auto-complete order DB logic
       if (allDone && tokenNumber !== null) {
         if (isCashOrder) {
           toast.success(`Token #${tokenNumber} items ready! Collect cash to close order.`, { icon: '💵' });
         } else {
-          // Optimistically remove from view
-          setOrders((prev) => prev.filter((o) => o.id !== orderId));
           await supabaseRef.current
             .from('orders')
             .update({ status: 'done', updated_at: new Date().toISOString() })
@@ -246,11 +265,19 @@ export default function OrderQueuePage() {
     }
   };
 
+  const validOrders = useMemo(() => {
+    return orders.filter(o => {
+      // Hide un-paid UPI checkout sessions entirely from dashboard queues!
+      if (o.payment_type === 'upi' && o.payment_status !== 'paid') return false;
+      return true;
+    });
+  }, [orders]);
+
   const activeOrders = useMemo(() => {
-    return orders
+    return validOrders
       .filter((o) => o.status === 'pending' || o.status === 'preparing')
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-  }, [orders]);
+  }, [validOrders]);
 
   /* ──────────────────────────────────
      Dynamic item columns for the summary.
@@ -284,11 +311,11 @@ export default function OrderQueuePage() {
   }, [activeOrders]);
 
   const totalToday = useMemo(() => {
-    const revenue = (orders || [])
+    const revenue = (validOrders || [])
       .filter((o) => o.status !== 'cancelled')
       .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
-    return { count: orders.length, revenue };
-  }, [orders]);
+    return { count: validOrders.length, revenue };
+  }, [validOrders]);
 
   const todayLabel = new Date().toLocaleDateString('en-IN', {
     weekday: 'short',
@@ -418,9 +445,17 @@ export default function OrderQueuePage() {
                     Mark as Done
                   </Button>
                 ) : (
-                  <span className="inline-flex items-center min-h-11 px-4 rounded-xl bg-green-100 text-green-700 text-sm font-semibold gap-1.5">
-                    <CheckCircle size={16} /> All Items Done
-                  </span>
+                  <Button
+                    size="md"
+                    className="min-h-11 px-4 bg-emerald-600 hover:bg-emerald-700 ring-4 ring-emerald-100 shadow-lg font-bold"
+                    loading={isSavingStatus}
+                    onClick={() => {
+                      setOrders((prev) => prev.filter((o) => o.id !== order.id)); // Optimistic UI clear
+                      setOrderStatus(order.id, 'done');
+                    }}
+                  >
+                    All Items Done — Close Order ✨
+                  </Button>
                 )
               )}
               <Button
@@ -541,7 +576,7 @@ export default function OrderQueuePage() {
                           {/* Column Header */}
                           <div className="px-4 py-3 bg-gradient-to-r from-[#1A1A2E] to-[#2d2d4e] flex items-center justify-between">
                             <h3 className="text-white font-bold uppercase tracking-wider text-sm">{col.name}</h3>
-                            <span className="bg-[#FF6B35] text-white text-xs font-extrabold min-w-[28px] text-center px-2.5 py-1 rounded-full shadow-lg shadow-orange-500/30">
+                            <span className="bg-[#FF6B35] text-white text-xl font-black min-w-[32px] text-center px-1.5 py-0.5 rounded-full shadow-lg shadow-orange-500/30">
                               {col.pendingQty}
                             </span>
                           </div>

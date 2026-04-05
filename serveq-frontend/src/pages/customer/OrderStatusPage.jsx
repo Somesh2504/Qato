@@ -60,7 +60,7 @@ export default function OrderStatusPage() {
     const map = {
       pending: {
         emoji: '🟡',
-        label: 'Order Received',
+        label: 'Preparing Your Order',
         bg: 'bg-yellow-50',
         text: 'text-yellow-800',
         border: 'border-yellow-200',
@@ -404,78 +404,81 @@ export default function OrderStatusPage() {
   const disclaimerText = 'Estimated time set by restaurant. May vary.';
 
   return (
-    <div className="min-h-screen bg-white pb-6">
-      {/* TOP SECTION */}
-      <div className="px-4 pt-7 pb-6 text-center bg-gradient-to-br from-[#1A1A2E] to-[#16213E]">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">
-          Token #{order?.token_number}
-        </h1>
+    <div className="min-h-screen bg-gray-50 pb-6">
+      {/* TOP SECTION (HEADER + ANIMATION) */}
+      <div className="bg-white border-b border-gray-100 shadow-sm rounded-b-3xl overflow-hidden pb-4">
+        <div className="px-4 pt-5 pb-5 text-center bg-gradient-to-br from-[#1A1A2E] to-[#16213E] relative">
+          <h1 className="text-2xl font-extrabold text-white tracking-tight mt-6">
+            Token #{order?.token_number}
+          </h1>
 
-        <div className="mt-4 flex justify-center">
-          <div
-            key={statusPillKey}
-            className={[
-              'inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold transition-all',
-              statusMeta.bg,
-              statusMeta.text,
-              statusMeta.border,
-            ].join(' ')}
-          >
-            <span className={`w-7 h-7 rounded-full flex items-center justify-center ${statusMeta.iconBg}`}>
-              {orderStatus === 'preparing' ? (
-                <ChefHat size={14} className="text-current animate-pulse" />
-              ) : (
-                <span>{statusMeta.emoji}</span>
-              )}
-            </span>
-            <span className={statusMeta.animation}>{statusMeta.label}</span>
-          </div>
-        </div>
-
-        <div className="mt-3 flex items-center justify-center gap-2 text-white/70 text-xs">
-          <Clock size={12} />
-          Placed {timeAgo(order?.created_at)}
-        </div>
-
-        {/* Order Completed Stamp */}
-        {orderStatus === 'done' && (
-          <div className="mt-4 flex justify-center animate-bounce-in">
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 24px',
-              border: '3px solid #22C55E',
-              borderRadius: '12px',
-              background: 'rgba(34, 197, 94, 0.1)',
-              transform: 'rotate(-3deg)',
-            }}>
-              <CheckCircle2 size={20} style={{ color: '#22C55E' }} />
-              <span style={{
-                color: '#22C55E',
-                fontWeight: 'bold',
-                fontSize: '16px',
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-              }}>Order Completed</span>
+          <div className="mt-3 flex justify-center">
+            <div
+              key={statusPillKey}
+              className={[
+                'inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all',
+                statusMeta.bg,
+                statusMeta.text,
+                statusMeta.border,
+              ].join(' ')}
+            >
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center ${statusMeta.iconBg}`}>
+                {orderStatus === 'preparing' ? (
+                  <ChefHat size={12} className="text-current animate-pulse" />
+                ) : (
+                  <span>{statusMeta.emoji}</span>
+                )}
+              </span>
+              <span className={statusMeta.animation}>{statusMeta.label}</span>
             </div>
+          </div>
+
+          <div className="mt-2 flex items-center justify-center gap-2 text-white/70 text-[10px]">
+            <Clock size={10} />
+            Placed {timeAgo(order?.created_at)}
+          </div>
+
+          {/* Order Completed Stamp */}
+          {orderStatus === 'done' && (
+            <div className="mt-3 flex justify-center animate-bounce-in">
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 16px',
+                border: '2px solid #22C55E',
+                borderRadius: '8px',
+                background: 'rgba(34, 197, 94, 0.1)',
+                transform: 'rotate(-3deg)',
+              }}>
+                <CheckCircle2 size={16} style={{ color: '#22C55E' }} />
+                <span style={{
+                  color: '#22C55E',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                }}>Order Completed</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* LOTTIE ANIMATION IN THE SAME BLOCK */}
+        {orderStatus !== 'cancelled' && (
+          <div className="w-full flex justify-center mt-[-10px] bg-white pt-2 relative z-10 rounded-t-2xl">
+            <Player
+              autoplay
+              loop
+              src={orderStatus === 'done' ? deliveredAnimation : chefAnimation}
+              style={{ width: '100%', maxWidth: '200px', height: '180px', objectFit: 'contain' }}
+            />
           </div>
         )}
       </div>
 
       {/* MIDDLE SECTION */}
-      <div className="px-4 pt-4 space-y-4">
-        {orderStatus !== 'cancelled' && (
-          <div className="flex justify-center bg-white rounded-2xl border border-gray-100 shadow-sm p-2 mb-2">
-            <Player
-              autoplay
-              loop
-              src={orderStatus === 'done' ? deliveredAnimation : chefAnimation}
-              style={{ width: '100%', maxWidth: '250px', height: 'auto' }}
-            />
-          </div>
-        )}
-
+      <div className="px-4 pt-6 space-y-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -574,7 +577,7 @@ export default function OrderStatusPage() {
 
         {/* Session Order History */}
         {sessionOrders.length > 1 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div id="session-orders-section" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 pt-4 pb-2">
               <h3 className="text-sm font-bold text-[#1A1A2E]">Your Orders This Session</h3>
             </div>
