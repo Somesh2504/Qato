@@ -146,16 +146,16 @@ export default function SuperadminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="w-8 h-8 border-3 border-[#FF6B35] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f1a] text-white">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       {/* ── Header ── */}
-      <header className="sticky top-0 z-20 bg-[#0f0f1a]/95 backdrop-blur-xl border-b border-white/10">
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-xl border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B35] to-[#e04e1a] flex items-center justify-center shadow-lg shadow-orange-500/30">
@@ -165,17 +165,17 @@ export default function SuperadminDashboard() {
               <h1 className="text-lg font-bold" style={{ fontFamily: "'Outfit','Inter',sans-serif" }}>
                 QATO Superadmin
               </h1>
-              <p className="text-xs text-white/40">{currentEmail}</p>
+              <p className="text-xs text-gray-500">{currentEmail}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" loading={refreshing} onClick={handleRefresh}
-              className="!border-white/20 !text-white/70 hover:!bg-white/10">
+              className="!border-gray-200 !text-gray-700 hover:!bg-gray-50">
               <RefreshCw size={14} />
               Refresh
             </Button>
             <button onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors">
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-red-600 hover:bg-red-50 transition-colors">
               <LogOut size={14} /> Logout
             </button>
           </div>
@@ -187,15 +187,15 @@ export default function SuperadminDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             { label: 'Total Restaurants', value: stats.total, icon: Building2, color: 'text-[#FF6B35]' },
-            { label: 'Starter Plans', value: stats.starter, icon: Users, color: 'text-blue-400' },
-            { label: 'Premium Plans', value: stats.premium, icon: Crown, color: 'text-purple-400' },
-            { label: 'Expiring Soon', value: stats.expiring, icon: AlertTriangle, color: 'text-yellow-400' },
-            { label: 'Expired', value: stats.expired, icon: XCircle, color: 'text-red-400' },
+            { label: 'Starter Plans', value: stats.starter, icon: Users, color: 'text-blue-500' },
+            { label: 'Premium Plans', value: stats.premium, icon: Crown, color: 'text-purple-500' },
+            { label: 'Expiring Soon', value: stats.expiring, icon: AlertTriangle, color: 'text-yellow-500' },
+            { label: 'Expired', value: stats.expired, icon: XCircle, color: 'text-red-500' },
           ].map(s => (
-            <div key={s.label} className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-4">
+            <div key={s.label} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
               <s.icon size={18} className={s.color} />
               <p className="text-2xl font-bold mt-2">{s.value}</p>
-              <p className="text-xs text-white/40 mt-0.5">{s.label}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -207,7 +207,7 @@ export default function SuperadminDashboard() {
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                 tab === t
                   ? 'bg-[#FF6B35] text-white shadow-lg shadow-orange-500/20'
-                  : 'bg-white/5 text-white/50 hover:bg-white/10'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
               }`}>
               {t === 'restaurants' ? (
                 <span className="flex items-center gap-1.5"><Building2 size={14} /> Restaurants</span>
@@ -223,22 +223,22 @@ export default function SuperadminDashboard() {
           <>
             {/* Search */}
             <div className="relative max-w-md">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search by name, email, or slug…"
-                className="w-full h-11 rounded-xl bg-white/5 border border-white/10 pl-10 pr-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6B35] transition-colors"
+                className="w-full h-11 rounded-xl bg-white border border-gray-200 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B35] transition-colors"
               />
             </div>
 
             {/* Table */}
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/10 text-white/40 text-left text-xs uppercase tracking-wider">
+                    <tr className="border-b border-gray-200 text-gray-500 text-left text-xs uppercase tracking-wider">
                       <th className="px-4 py-3">Restaurant</th>
                       <th className="px-4 py-3">Owner Email</th>
                       <th className="px-4 py-3">Plan</th>
@@ -250,7 +250,7 @@ export default function SuperadminDashboard() {
                   <tbody>
                     {filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-white/30">
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                           No restaurants found.
                         </td>
                       </tr>
@@ -258,49 +258,49 @@ export default function SuperadminDashboard() {
                       const days = daysUntil(r.subscription_end_date);
                       const plan = r.subscription_plan || 'Free';
                       let statusLabel = 'Active';
-                      let statusCls = 'bg-green-500/20 text-green-400';
+                      let statusCls = 'bg-green-50 text-green-700 border border-green-200/60';
                       if (days < 0) {
                         statusLabel = 'Expired';
-                        statusCls = 'bg-red-500/20 text-red-400';
+                        statusCls = 'bg-red-50 text-red-700 border border-red-200/60';
                       } else if (days <= 2) {
                         statusLabel = 'Critical';
-                        statusCls = 'bg-red-500/20 text-red-400 animate-pulse';
+                        statusCls = 'bg-red-100 text-red-700 border border-red-200/60 animate-pulse';
                       } else if (days <= 5) {
                         statusLabel = 'Expiring Soon';
-                        statusCls = 'bg-yellow-500/20 text-yellow-400';
+                        statusCls = 'bg-yellow-50 text-yellow-700 border border-yellow-200/60';
                       }
 
                       return (
-                        <tr key={r.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               {r.logo_url ? (
                                 <img src={r.logo_url} alt="" className="w-8 h-8 rounded-lg object-cover" />
                               ) : (
-                                <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/20 flex items-center justify-center text-[#FF6B35] font-bold text-xs">
+                                <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 flex items-center justify-center text-[#FF6B35] font-bold text-xs">
                                   {(r.name || '?')[0].toUpperCase()}
                                 </div>
                               )}
                               <div>
-                                <p className="font-semibold text-white">{r.name}</p>
-                                <p className="text-xs text-white/30">/{r.slug}</p>
+                                <p className="font-semibold text-gray-900">{r.name}</p>
+                                <p className="text-xs text-gray-500">/{r.slug}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-white/60">{r.owner_email}</td>
+                          <td className="px-4 py-3 text-gray-700">{r.owner_email}</td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${PLAN_COLORS[plan] || PLAN_COLORS.Free}`}>
                               {plan}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-white/60 text-xs">
+                          <td className="px-4 py-3 text-gray-600 text-xs">
                             {r.subscription_end_date
                               ? new Date(r.subscription_end_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
                               : '—'
                             }
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`font-bold ${days < 0 ? 'text-red-400' : days <= 2 ? 'text-red-400' : days <= 5 ? 'text-yellow-400' : 'text-green-400'}`}>
+                            <span className={`font-bold ${days < 0 ? 'text-red-500' : days <= 2 ? 'text-red-500' : days <= 5 ? 'text-yellow-600' : 'text-green-600'}`}>
                               {days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`}
                             </span>
                           </td>
@@ -323,8 +323,8 @@ export default function SuperadminDashboard() {
         {tab === 'admins' && (
           <div className="space-y-4">
             {/* Add new admin */}
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
-              <h3 className="text-sm font-bold text-white/70 mb-3 flex items-center gap-2">
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <Plus size={14} /> Add New Superadmin
               </h3>
               <div className="flex gap-2 max-w-md">
@@ -333,33 +333,33 @@ export default function SuperadminDashboard() {
                   value={newAdminEmail}
                   onChange={e => setNewAdminEmail(e.target.value)}
                   placeholder="admin@email.com"
-                  className="flex-1 h-11 rounded-xl bg-white/5 border border-white/10 px-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF6B35] transition-colors"
+                  className="flex-1 h-11 rounded-xl bg-white border border-gray-200 px-4 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#FF6B35] transition-colors"
                   onKeyDown={e => e.key === 'Enter' && handleAddAdmin()}
                 />
                 <Button variant="primary" loading={addingAdmin} onClick={handleAddAdmin}>
                   <Plus size={14} /> Add
                 </Button>
               </div>
-              <p className="text-xs text-white/30 mt-2">
+              <p className="text-xs text-gray-500 mt-2">
                 Only existing superadmins can add new ones. Added admins will have full access to this panel.
               </p>
             </div>
 
             {/* Admin list */}
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-white/10">
-                <h3 className="text-sm font-bold text-white/70">Current Superadmins ({admins.length})</h3>
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+              <div className="px-4 py-3 border-b border-gray-100">
+                <h3 className="text-sm font-bold text-gray-900">Current Superadmins ({admins.length})</h3>
               </div>
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-gray-100">
                 {admins.map(a => (
-                  <div key={a.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors">
+                  <div key={a.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#e04e1a] flex items-center justify-center text-white font-bold text-xs">
                         {a.email[0].toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">{a.email}</p>
-                        <p className="text-xs text-white/30">
+                        <p className="text-sm font-medium text-gray-900">{a.email}</p>
+                        <p className="text-xs text-gray-500">
                           Added {new Date(a.created_at).toLocaleDateString('en-IN')}
                           {a.email === currentEmail && (
                             <span className="ml-1 text-[#FF6B35]">· You</span>
@@ -370,7 +370,7 @@ export default function SuperadminDashboard() {
                     {a.email !== currentEmail && (
                       <button
                         onClick={() => handleRemoveAdmin(a.id, a.email)}
-                        className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>
