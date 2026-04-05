@@ -20,6 +20,7 @@ const CheckoutPage = lazy(() => import('./pages/customer/CheckoutPage'));
 const PaymentResultPage = lazy(() => import('./pages/customer/PaymentResultPage'));
 const OrderStatusPage = lazy(() => import('./pages/customer/OrderStatusPage'));
 const SuperadminDashboard = lazy(() => import('./pages/superadmin/SuperadminDashboard'));
+const SuperadminLoginPage = lazy(() => import('./pages/superadmin/SuperadminLoginPage'));
 
 // Protected route wrapper (Restaurant Admin)
 function Protected({ children }) {
@@ -30,21 +31,10 @@ function Protected({ children }) {
   return children;
 }
 
-// Superadmin protected route wrapper
+// Superadmin protected route wrapper — checks sessionStorage flag from /superadmin/login
 function SuperadminProtected({ children }) {
-  const { isLoggedIn, isLoading, isSuperadmin } = useAuth();
-  if (isLoading) return <LoadingSpinner fullScreen text="Loading…" />;
-  if (!isLoggedIn) return <Navigate to="/login" replace />;
-  if (!isSuperadmin) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#0f0f1a] text-white">
-      <div className="text-6xl">🔒</div>
-      <h1 className="text-2xl font-bold">Access Denied</h1>
-      <p className="text-white/50">You do not have superadmin privileges.</p>
-      <a href="/" className="px-4 py-2 bg-[#FF6B35] text-white rounded-xl font-medium hover:bg-[#E55A24] transition-colors">
-        Go Home
-      </a>
-    </div>
-  );
+  const isSuperadmin = sessionStorage.getItem('qato_superadmin') === 'true';
+  if (!isSuperadmin) return <Navigate to="/superadmin/login" replace />;
   return children;
 }
 
@@ -90,6 +80,7 @@ export default function App() {
           <Route path="/admin/settings" element={<Protected><SettingsPage /></Protected>} />
 
           {/* Superadmin (protected — only verified superadmins) */}
+          <Route path="/superadmin/login" element={<SuperadminLoginPage />} />
           <Route path="/superadmin" element={<Navigate to="/superadmin/dashboard" replace />} />
           <Route path="/superadmin/dashboard" element={<SuperadminProtected><SuperadminDashboard /></SuperadminProtected>} />
 
