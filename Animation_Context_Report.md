@@ -1,7 +1,7 @@
 # Qato (ServeQ) - Project Context & Animation Guidelines
 
 ## 1. Project Overview
-**Qato** (formerly ServeQ) is a modern SaaS food-ordering platform. It facilitates a seamless digital dining experience by enabling customers to scan QR codes, view digital menus, place orders, and pay online. Waitstaff and restaurant admins manage these orders in real-time through an administrative dashboard.
+**QRave** (formerly ServeQ) is a modern SaaS food-ordering platform. It facilitates a seamless digital dining experience by enabling customers to scan QR codes, view digital menus, place orders, and pay online. Waitstaff and restaurant admins manage these orders in real-time through an administrative dashboard.
 
 **Tech Stack:**
 - **Frontend Framework:** React 19 + Vite 

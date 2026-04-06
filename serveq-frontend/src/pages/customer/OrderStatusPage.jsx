@@ -35,6 +35,24 @@ export default function OrderStatusPage() {
   const [queueAhead, setQueueAhead] = useState(0);
   const [manualRefreshing, setManualRefreshing] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleRequestCancellation = async () => {
+    if (!window.confirm("Are you sure you want to request cancellation for this order?")) return;
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'cancellation_requested', updated_at: new Date().toISOString() })
+        .eq('id', orderId);
+      if (error) throw error;
+      toast.success("Cancellation requested successfully.");
+    } catch {
+      toast.error('Could not request cancellation. Please try again.');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   // Animated status pill
   const [statusAnimKey, setStatusAnimKey] = useState(0);
@@ -84,6 +102,15 @@ export default function OrderStatusPage() {
         border: 'border-green-200',
         iconBg: 'bg-green-100',
         animation: '',
+      },
+      cancellation_requested: {
+        emoji: '⏳',
+        label: 'Cancellation Pending',
+        bg: 'bg-orange-50',
+        text: 'text-orange-800',
+        border: 'border-orange-200',
+        iconBg: 'bg-orange-100',
+        animation: 'animate-pulse',
       },
       cancelled: {
         emoji: '🔴',
@@ -286,7 +313,35 @@ export default function OrderStatusPage() {
           table: 'orders',
           filter: `restaurant_id=eq.${restaurantId}`,
         },
-        () => {
+        (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            setSessionOrders((prev) => {
+              const isOurs = prev.some((o) => o.id === payload.new.id);
+              if (!isOurs) return prev;
+
+              // Don't toast if it's the CURRENT order we are viewing (we do confetti instead)
+              const oldMatch = prev.find((o) => o.id === payload.new.id);
+              if (
+                oldMatch &&
+                oldMatch.status !== 'done' &&
+                payload.new.status === 'done' &&
+                payload.new.id !== orderId
+              ) {
+                toast.success(`Token #${payload.new.token_number} is ready for pickup! 🥳`, { duration: 5000 });
+              }
+
+              const updatedOrders = prev.map((o) =>
+                o.id === payload.new.id ? { ...o, status: payload.new.status } : o
+              );
+              try {
+                localStorage.setItem('qato_session_orders', JSON.stringify(updatedOrders));
+              } catch {
+                // ignore
+              }
+              return updatedOrders;
+            });
+          }
+
           if (timer) clearTimeout(timer);
           timer = setTimeout(() => {
             recalcQueueAhead();
@@ -300,7 +355,7 @@ export default function OrderStatusPage() {
       supabase.removeChannel(restaurantChannel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, order?.restaurant_id]);
+  }, [supabase, orderId, order?.restaurant_id]);
 
   // POST-ORDER RATING sheet: open 3 seconds after status becomes done.
   useEffect(() => {
@@ -575,6 +630,14 @@ export default function OrderStatusPage() {
           </Button>
         </div>
 
+        {orderStatus === 'pending' && (
+          <div className="mt-2 text-center">
+            <Button variant="outline" className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300" loading={cancelling} onClick={handleRequestCancellation}>
+               Request Cancellation
+            </Button>
+          </div>
+        )}
+
         {/* Session Order History */}
         {sessionOrders.length > 1 && (
           <div id="session-orders-section" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -584,8 +647,8 @@ export default function OrderStatusPage() {
             <div className="px-4 pb-4 space-y-2">
               {sessionOrders.map((sOrder) => {
                 const isCurrentOrder = sOrder.id === orderId;
-                const statusColor = sOrder.status === 'done' ? 'text-[#22C55E]' : sOrder.status === 'cancelled' ? 'text-red-500' : 'text-yellow-600';
-                const statusLabel = sOrder.status === 'done' ? 'Completed' : sOrder.status === 'cancelled' ? 'Cancelled' : sOrder.status === 'preparing' ? 'Preparing' : 'Pending';
+                const statusColor = sOrder.status === 'done' ? 'text-[#22C55E]' : sOrder.status === 'cancelled' ? 'text-red-500' : sOrder.status === 'cancellation_requested' ? 'text-orange-500' : 'text-yellow-600';
+                const statusLabel = sOrder.status === 'done' ? 'Completed' : sOrder.status === 'cancelled' ? 'Cancelled' : sOrder.status === 'cancellation_requested' ? 'Cancel Requested' : sOrder.status === 'preparing' ? 'Preparing' : 'Pending';
                 const orderTime = new Date(sOrder.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
                 return (
                   <button

@@ -41,6 +41,8 @@ export default function SignupPage() {
   // Step 1 — email/password
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otp, setOtp] = useState('');
 
   // Step 2 — restaurant profile
   const [shopName, setShopName] = useState('');
@@ -198,32 +200,44 @@ export default function SignupPage() {
         return;
       }
 
-      // No session: usually "Confirm email" is ON, or edge cases. Try password sign-in once.
-      const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password,
-      });
-      if (loginErr) {
-        const raw = loginErr.message || '';
-        const isCredentialNoise =
-          raw.includes('Invalid login credentials') || raw.includes('Invalid email or password');
-        if (isCredentialNoise) {
-          throw new Error(
-            'We could not start a session yet. If Supabase has “Confirm email” enabled, open the link in the email we sent, then click Continue again. For local testing you can disable it under Authentication → Providers → Email.'
-          );
-        }
-        throw loginErr;
-      }
-      if (!loginData?.session?.access_token) {
-        throw new Error('No session returned. Try confirming your email or signing in.');
-      }
+      // No session means "Confirm email" is ON (OTP requires verification).
+      setIsVerifyingOtp(true);
+      toast.success('Registration successful. Please check your email for the OTP.');
 
-      setAuthToken(loginData.session.access_token);
-      setAuthUserEmail(trimmedEmail);
-      setEmail(trimmedEmail);
-      next();
     } catch (err) {
       const msg = err.message || 'Signup failed';
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    // Clean to ensure numbers only
+    const cleanOtp = otp.replace(/\D/g, '').slice(0, 6);
+    if (cleanOtp.length !== 6) return setError('OTP must be exactly 6 digits');
+
+    setLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error: verifyErr } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: cleanOtp,
+        type: 'signup'
+      });
+
+      if (verifyErr) throw verifyErr;
+      if (!data?.session?.access_token) throw new Error('Failed to start session after OTP verification');
+
+      setAuthToken(data.session.access_token);
+      setAuthUserEmail(email.trim());
+      next();
+    } catch (err) {
+      const msg = err.message || 'OTP Verification failed';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -465,68 +479,99 @@ export default function SignupPage() {
         <div className="p-5 md:p-6 text-[#1A1A2E]">
           {/* ── STEP 1: Account Creation ─────────────────────────── */}
           {step === 1 && (
-            <form onSubmit={handleCreateAccount} className="space-y-4">
+            <form onSubmit={isVerifyingOtp ? handleVerifyOtp : handleCreateAccount} className="space-y-4">
               <h2 className="text-lg font-bold text-[#1A1A2E]">Step 1 — Account Creation</h2>
-              <button
-                type="button"
-                onClick={handleGoogleSignup}
-                disabled={googleLoading}
-                className="w-full flex items-center justify-center gap-3 h-12 rounded-xl bg-white border-1.5 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {googleLoading ? (
-                  <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.64 9.2045c0-.638-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9087C16.6582 14.0518 17.64 11.8264 17.64 9.2045z" fill="#4285F4"/>
-                    <path d="M9 18c2.43 0 4.4673-.8064 5.9564-2.1818l-2.9087-2.2582c-.8064.54-1.8382.8591-3.0477.8591-2.3427 0-4.3282-1.5818-5.0373-3.7109H.9573v2.3318C2.4382 15.9832 5.4818 18 9 18z" fill="#34A853"/>
-                    <path d="M3.9627 10.71c-.18-.54-.2827-1.1168-.2827-1.71s.1027-1.17.2827-1.71V4.9582H.9573A8.9962 8.9962 0 000 9c0 1.4523.3477 2.8268.9573 4.0418L3.9627 10.71z" fill="#FBBC05"/>
-                    <path d="M9 3.5791c1.3214 0 2.5077.4545 3.4405 1.346l2.5814-2.5814C13.4627.8918 11.4255 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.9627 7.29C4.6718 5.1609 6.6573 3.5791 9 3.5791z" fill="#EA4335"/>
-                  </svg>
-                )}
-                {googleLoading ? 'Redirecting to Google…' : 'Continue with Google'}
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-gray-100" />
-                <span className="text-xs text-gray-400 uppercase tracking-wider">or</span>
-                <div className="flex-1 h-px bg-gray-100" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1.5 font-medium">Owner Email</label>
-                <div className="relative">
-                  <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    type="email"
-                    className={`${inputCls} pl-9`}
-                    placeholder="owner@restaurant.com"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1.5 font-medium">Password</label>
-                <div className="relative">
-                  <input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    type={showPw ? 'text' : 'password'}
-                    className={`${inputCls} pr-10`}
-                    placeholder="Minimum 8 characters"
-                  />
+              
+              {!isVerifyingOtp ? (
+                <>
                   <button
                     type="button"
-                    onClick={() => setShowPw((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={handleGoogleSignup}
+                    disabled={googleLoading}
+                    className="w-full flex items-center justify-center gap-3 h-12 rounded-xl bg-white border-1.5 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                    {googleLoading ? (
+                      <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.64 9.2045c0-.638-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9087C16.6582 14.0518 17.64 11.8264 17.64 9.2045z" fill="#4285F4"/>
+                        <path d="M9 18c2.43 0 4.4673-.8064 5.9564-2.1818l-2.9087-2.2582c-.8064.54-1.8382.8591-3.0477.8591-2.3427 0-4.3282-1.5818-5.0373-3.7109H.9573v2.3318C2.4382 15.9832 5.4818 18 9 18z" fill="#34A853"/>
+                        <path d="M3.9627 10.71c-.18-.54-.2827-1.1168-.2827-1.71s.1027-1.17.2827-1.71V4.9582H.9573A8.9962 8.9962 0 000 9c0 1.4523.3477 2.8268.9573 4.0418L3.9627 10.71z" fill="#FBBC05"/>
+                        <path d="M9 3.5791c1.3214 0 2.5077.4545 3.4405 1.346l2.5814-2.5814C13.4627.8918 11.4255 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.9627 7.29C4.6718 5.1609 6.6573 3.5791 9 3.5791z" fill="#EA4335"/>
+                      </svg>
+                    )}
+                    {googleLoading ? 'Redirecting to Google…' : 'Continue with Google'}
                   </button>
-                </div>
-              </div>
-              <div className="pt-2 flex justify-end">
-                <Button type="submit" variant="primary" loading={loading}>
-                  Continue
-                </Button>
-              </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-gray-100" />
+                    <span className="text-xs text-gray-400 uppercase tracking-wider">or</span>
+                    <div className="flex-1 h-px bg-gray-100" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1.5 font-medium">Owner Email</label>
+                    <div className="relative">
+                      <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        type="email"
+                        className={`${inputCls} pl-9`}
+                        placeholder="owner@restaurant.com"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1.5 font-medium">Password</label>
+                    <div className="relative">
+                      <input
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        type={showPw ? 'text' : 'password'}
+                        className={`${inputCls} pr-10`}
+                        placeholder="Minimum 8 characters"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPw((s) => !s)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="pt-2 flex justify-end">
+                    <Button type="submit" variant="primary" loading={loading}>
+                      Continue
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="p-4 bg-green-50 border border-green-100 rounded-xl mb-4">
+                    <p className="text-sm font-medium text-green-800">We've sent a 6-digit OTP to <strong>{email}</strong></p>
+                    <p className="text-xs text-green-600 mt-1">Please enter the code below to verify your email address.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1.5 font-medium">Enter OTP</label>
+                    <input
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      type="text"
+                      inputMode="numeric"
+                      className={inputCls}
+                      placeholder="000000"
+                    />
+                  </div>
+                  <div className="pt-2 flex items-center justify-between">
+                    <Button type="button" variant="outline" onClick={() => setIsVerifyingOtp(false)}>
+                      Back
+                    </Button>
+                    <Button type="submit" variant="primary" loading={loading} disabled={otp.length !== 6}>
+                      Verify & Continue
+                    </Button>
+                  </div>
+                </>
+              )}
             </form>
           )}
 

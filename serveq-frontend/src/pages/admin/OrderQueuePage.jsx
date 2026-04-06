@@ -258,6 +258,49 @@ export default function OrderQueuePage() {
             .eq('restaurant_id', restaurantId);
           toast.success(`Token #${tokenNumber} — All items done! 🎉`);
         }
+
+        // Jump to next token
+        const validUnpaidUpiFiltered = orders.filter(o => !(o.payment_type === 'upi' && o.payment_status !== 'paid'));
+        const active = validUnpaidUpiFiltered
+          .filter((o) => o.status === 'pending' || o.status === 'preparing' || o.status === 'cancellation_requested')
+          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+          
+        const currentIndex = active.findIndex(o => o.id === orderId);
+        if (currentIndex !== -1 && currentIndex + 1 < active.length) {
+          const nextOrder = active[currentIndex + 1];
+          const nextItem = (nextOrder.order_items || []).find(item => !item.is_done);
+          if (nextItem) {
+             const colName = nextItem.item_name || nextItem.name;
+             const nextColId = `col-${colName.replace(/\s+/g, '-')}`;
+             setTimeout(() => {
+               const nextColEl = document.getElementById(nextColId);
+               if (nextColEl && nextColEl.parentElement) {
+                 const container = nextColEl.parentElement;
+                 container.scrollTo({
+                   left: nextColEl.offsetLeft - container.offsetLeft - (container.clientWidth / 2) + (nextColEl.clientWidth / 2),
+                   behavior: 'smooth'
+                 });
+               }
+             }, 100);
+          }
+        }
+      } else if (!allDone) {
+        // Jump to next pending item for this token
+        const nextItem = updatedItems.find((item) => !item.is_done);
+        if (nextItem) {
+          const colName = nextItem.item_name || nextItem.name;
+          const nextColId = `col-${colName.replace(/\s+/g, '-')}`;
+          setTimeout(() => {
+            const nextColEl = document.getElementById(nextColId);
+            if (nextColEl && nextColEl.parentElement) {
+              const container = nextColEl.parentElement;
+              container.scrollTo({
+                left: nextColEl.offsetLeft - container.offsetLeft - (container.clientWidth / 2) + (nextColEl.clientWidth / 2),
+                behavior: 'smooth'
+              });
+            }
+          }, 100);
+        }
       }
     } catch {
       toast.error('Unable to mark item as done');
@@ -276,7 +319,7 @@ export default function OrderQueuePage() {
 
   const activeOrders = useMemo(() => {
     return validOrders
-      .filter((o) => o.status === 'pending' || o.status === 'preparing')
+      .filter((o) => o.status === 'pending' || o.status === 'preparing' || o.status === 'cancellation_requested')
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   }, [validOrders]);
 
@@ -410,6 +453,22 @@ export default function OrderQueuePage() {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2 items-end justify-end">
+          {order.status === 'cancellation_requested' && (
+            <div className="w-full bg-red-50 border border-red-200 rounded-xl p-3 mb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+              <span className="text-red-700 text-sm font-bold flex items-center gap-2">
+                <AlertTriangle size={16} /> Customer requested cancellation
+              </span>
+              <div className="flex gap-2">
+                <Button size="sm" className="bg-red-600 hover:bg-red-700" loading={isSavingStatus} onClick={() => setOrderStatus(order.id, 'cancelled')}>
+                  Approve Res
+                </Button>
+                <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-100" loading={isSavingStatus} onClick={() => setOrderStatus(order.id, 'pending')}>
+                  Decline
+                </Button>
+              </div>
+            </div>
+          )}
+
           {(!allItemsDone && order.status === 'pending') && (
             <Button
               size="md"
@@ -523,6 +582,7 @@ export default function OrderQueuePage() {
               <div className="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-[#1A1A2E]">
                 {restaurantName || 'Restaurant'}
               </div>
+
               <Button variant="outline" size="sm" loading={refreshing} icon={<RefreshCw size={14} />} onClick={handleRefresh}>
                 Refresh
               </Button>
@@ -603,6 +663,7 @@ export default function OrderQueuePage() {
                       const doneTokens = col.tokens.filter((t) => t.isDone);
                       return (
                         <div
+                          id={`col-${col.name.replace(/\s+/g, '-')}`}
                           key={col.name}
                           className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col min-w-[300px] w-[300px] shrink-0 snap-center"
                         >
