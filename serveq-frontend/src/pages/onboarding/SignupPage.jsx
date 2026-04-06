@@ -452,9 +452,7 @@ export default function SignupPage() {
         {/* Header + progress */}
         <div className="p-5 md:p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#FF6B35] flex items-center justify-center shadow-lg shadow-orange-500/20">
-              <Zap size={20} className="text-white" />
-            </div>
+            <img src="/logo.jpg" alt="QRAVE Logo" className="w-11 h-11 rounded-xl shadow-lg shadow-orange-500/20 object-cover" />
             <div>
               <h1 className="text-xl font-bold text-[#1A1A2E]" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QRAVE Onboarding</h1>
               <p className="text-xs text-gray-400">

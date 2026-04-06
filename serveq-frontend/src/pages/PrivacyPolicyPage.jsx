@@ -40,21 +40,17 @@ export default function PrivacyPolicyPage() {
               color: '#1A1A2E',
             }}
           >
-            <div
+            <img 
+              src="/logo.jpg" 
+              alt="QRAVE Logo" 
               style={{
                 width: 34,
                 height: 34,
                 borderRadius: 10,
-                background: 'linear-gradient(135deg, #FF6B35, #FF8F5E)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
+                objectFit: 'cover',
                 boxShadow: '0 4px 12px rgba(255,107,53,0.3)',
               }}
-            >
-              <Zap size={16} />
-            </div>
+            />
             QRAVE
           </Link>
           <Link

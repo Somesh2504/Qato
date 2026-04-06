@@ -143,9 +143,7 @@ export default function LandingPage() {
       <nav className={`landing-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="landing-nav-inner">
           <Link to="/" className="nav-logo" onClick={(e) => handleNavClick(e, '#home')}>
-            <div className="nav-logo-icon">
-              <Zap size={20} />
-            </div>
+            <img src="/logo.jpg" alt="QRAVE Logo" className="w-8 h-8 rounded-lg object-contain" />
             QRAVE
           </Link>
 
@@ -168,7 +166,7 @@ export default function LandingPage() {
               Login
             </button>
             <button className="nav-register-btn" onClick={() => navigate('/signup')}>
-              Register Free
+              Register
             </button>
             <button
               className="mobile-menu-btn"
@@ -216,7 +214,7 @@ export default function LandingPage() {
           className="nav-register-btn"
           onClick={() => setMobileMenuOpen(false)}
         >
-          Register Free
+          Register
         </Link>
       </div>
 
@@ -482,12 +480,7 @@ export default function LandingPage() {
           <div className="footer-top">
             <div className="footer-brand">
               <div className="footer-brand-logo">
-                <div
-                  className="nav-logo-icon"
-                  style={{ width: 32, height: 32, borderRadius: 10 }}
-                >
-                  <Zap size={16} />
-                </div>
+                <img src="/logo.jpg" alt="QRAVE Logo" className="w-8 h-8 rounded-lg object-contain" />
                 QRAVE
               </div>
               <p>

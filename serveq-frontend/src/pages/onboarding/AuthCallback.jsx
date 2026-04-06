@@ -79,9 +79,7 @@ export default function AuthCallback() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1A1A2E] via-[#16213E] to-[#0F3460] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4 text-white">
-        <div className="w-14 h-14 rounded-2xl bg-[#FF6B35] flex items-center justify-center animate-pulse">
-          <Zap size={24} className="text-white" />
-        </div>
+        <img src="/logo.jpg" alt="QRAVE Logo" className="w-14 h-14 rounded-2xl animate-pulse object-cover" />
         <p className="text-lg font-semibold tracking-wide">Signing you in…</p>
         <p className="text-sm text-white/50">Hang tight, verifying with Google</p>
       </div>

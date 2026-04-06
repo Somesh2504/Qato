@@ -1223,6 +1223,12 @@
     display: none;
   }
 
+  .nav-actions .nav-register-btn {
+    padding: 7px 16px;
+    font-size: 0.82rem;
+    border-radius: 8px;
+  }
+
   .mobile-menu-btn {
     display: block;
   }

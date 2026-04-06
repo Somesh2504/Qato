@@ -73,9 +73,7 @@ export default function AdminSidebar() {
         'flex items-center border-b border-white/10 flex-shrink-0',
         collapsed ? 'justify-center px-0 py-5' : 'px-5 py-5 gap-2.5',
       ].join(' ')}>
-        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#FF6B35] flex-shrink-0">
-          <Zap size={18} className="text-white" />
-        </div>
+        <img src="/logo.jpg" alt="QRAVE Logo" className="w-9 h-9 rounded-xl shadow-lg shadow-[#FF6B35]/20 object-cover flex-shrink-0" />
         {(!collapsed || isMobile) && (
           <span className="text-lg font-bold tracking-tight" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QRAVE</span>
         )}

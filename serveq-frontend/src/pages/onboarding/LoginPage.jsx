@@ -122,9 +122,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-fade-in-scale">
         {/* Header */}
         <div className="p-6 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#FF6B35] flex items-center justify-center shadow-lg shadow-orange-500/20">
-            <Zap size={18} className="text-white" />
-          </div>
+          <img src="/logo.jpg" alt="QRAVE Logo" className="w-10 h-10 rounded-xl shadow-lg shadow-orange-500/20 object-cover" />
           <div>
             <h1 className="text-lg font-bold text-[#1A1A2E]" style={{fontFamily:"'Outfit','Inter',sans-serif"}}>QRAVE</h1>
             <p className="text-xs text-gray-400">Admin Login</p>
