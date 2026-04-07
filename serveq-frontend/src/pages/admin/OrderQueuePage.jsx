@@ -4,6 +4,7 @@ import {
   Bell,
   CalendarDays,
   CheckCircle,
+  ClipboardPlus,
   Clock3,
   Loader2,
   Package,
@@ -11,6 +12,7 @@ import {
   UtensilsCrossed,
   XCircle,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
@@ -28,6 +30,7 @@ const getTodayRange = () => {
 };
 
 export default function OrderQueuePage() {
+  const navigate = useNavigate();
   const { restaurantId, restaurantName, subscriptionPlan, subscriptionEndDate } = useAuth();
   const supabaseRef = useRef(null);
   const [orders, setOrders] = useState([]);
@@ -228,7 +231,7 @@ export default function OrderQueuePage() {
       // Find the order before updating state to know if it's cash
       const currentOrder = orders.find(o => o.id === orderId);
       if (!currentOrder) return;
-      const isCashOrder = currentOrder.payment_type === 'cash';
+      const requiresCashCollection = currentOrder.payment_type === 'cash' && currentOrder.payment_status !== 'paid';
 
       const updatedItems = (currentOrder.order_items || []).map((item) =>
         item.id === orderItemId ? { ...item, is_done: true } : item
@@ -238,8 +241,8 @@ export default function OrderQueuePage() {
 
       // Optimistic local state update - ATOMIC
       setOrders((prev) => {
-        if (allDone && tokenNumber !== null && !isCashOrder) {
-          // Remove from view entirely if it's UPI and all items are done
+        if (allDone && tokenNumber !== null && !requiresCashCollection) {
+          // Remove from view entirely once all items are done for prepaid orders
           return prev.filter((o) => o.id !== orderId);
         }
         // Otherwise just update the item to be done visually
@@ -248,7 +251,7 @@ export default function OrderQueuePage() {
 
       // Auto-complete order DB logic
       if (allDone && tokenNumber !== null) {
-        if (isCashOrder) {
+        if (requiresCashCollection) {
           toast.success(`Token #${tokenNumber} items ready! Collect cash to close order.`, { icon: '💵' });
         } else {
           await supabaseRef.current
@@ -402,6 +405,7 @@ export default function OrderQueuePage() {
   const renderOrderCard = (order) => {
     const isSavingStatus = Boolean(savingStatusIds[order.id]);
     const allItemsDone = (order.order_items || []).length > 0 && (order.order_items || []).every((i) => i.is_done);
+    const requiresCashCollection = order.payment_type === 'cash' && order.payment_status !== 'paid';
 
     return (
       <div
@@ -482,7 +486,7 @@ export default function OrderQueuePage() {
 
           {((order.status === 'preparing' || allItemsDone) && order.status !== 'done') && (
             <>
-              {order.payment_type === 'cash' ? (
+              {requiresCashCollection ? (
                 <Button
                   size="md"
                   className={`min-h-11 px-4 transition-all ${allItemsDone ? 'bg-red-600 hover:bg-red-700 font-bold ring-4 ring-red-100 shadow-lg' : 'bg-red-600 hover:bg-red-700'}`}
@@ -576,6 +580,14 @@ export default function OrderQueuePage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 md:gap-3">
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<ClipboardPlus size={14} />}
+                onClick={() => navigate('/admin/manual-order')}
+              >
+                Manual Order
+              </Button>
               <div className="px-3 py-2 rounded-xl bg-[#1A1A2E] text-white text-sm font-medium">
                 Total today: {totalToday.count} orders | {formatIndianPrice(totalToday.revenue)} revenue
               </div>

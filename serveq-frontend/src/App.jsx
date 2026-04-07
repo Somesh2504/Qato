@@ -12,6 +12,7 @@ const SignupPage = lazy(() => import('./pages/onboarding/SignupPage'));
 const LoginPage = lazy(() => import('./pages/onboarding/LoginPage'));
 const AuthCallback = lazy(() => import('./pages/onboarding/AuthCallback'));
 const OrderQueuePage = lazy(() => import('./pages/admin/OrderQueuePage'));
+const ManualOrderPage = lazy(() => import('./pages/admin/ManualOrderPage'));
 const MenuManagementPage = lazy(() => import('./pages/admin/MenuManagementPage'));
 const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
@@ -75,6 +76,7 @@ export default function App() {
           {/* Admin (protected) */}
           <Route path="/admin" element={<Navigate to="/admin/orders" replace />} />
           <Route path="/admin/orders" element={<Protected><OrderQueuePage /></Protected>} />
+          <Route path="/admin/manual-order" element={<Protected><ManualOrderPage /></Protected>} />
           <Route path="/admin/menu" element={<Protected><MenuManagementPage /></Protected>} />
           <Route path="/admin/analytics" element={<Protected><AnalyticsPage /></Protected>} />
           <Route path="/admin/settings" element={<Protected><SettingsPage /></Protected>} />
