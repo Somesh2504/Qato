@@ -3,6 +3,7 @@ import { Check, GripVertical, ImagePlus, MoreVertical, Plus, Save, Search, Trash
 import AdminSidebar from '../../components/layout/AdminSidebar';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
+import MenuAiScanner from '../../components/ui/MenuAiScanner';
 import { useAuth } from '../../context/AuthContext';
 import { getSupabaseClient } from '../../lib/supabaseClient';
 import { formatIndianPrice } from '../../utils/helpers';
@@ -37,6 +38,12 @@ export default function MenuManagementPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragCategoryId, setDragCategoryId] = useState('');
+  const [aiImportOpen, setAiImportOpen] = useState(false);
+  const [aiImportBusy, setAiImportBusy] = useState(false);
+  const [aiReviewOpen, setAiReviewOpen] = useState(false);
+  const [aiReviewCategories, setAiReviewCategories] = useState([]);
+  const [aiReviewItems, setAiReviewItems] = useState([]);
+  const [aiImportSaving, setAiImportSaving] = useState(false);
 
   const loadData = async () => {
     if (!restaurantId || !supabaseRef.current) return;
@@ -226,6 +233,143 @@ export default function MenuManagementPage() {
     }
   };
 
+  const handleAiScanComplete = (result) => {
+    const sourceCategories = Array.isArray(result?.categories) ? result.categories : [];
+    const nextCategories = [];
+    const nextItems = [];
+
+    sourceCategories.forEach((category, categoryIndex) => {
+      const categoryName = String(category?.name || `Category ${categoryIndex + 1}`).trim() || `Category ${categoryIndex + 1}`;
+      const categoryId = `ai_cat_${Date.now()}_${categoryIndex}_${Math.random().toString(36).slice(2, 6)}`;
+      nextCategories.push({ id: categoryId, name: categoryName });
+
+      const rawItems = Array.isArray(category?.items) ? category.items : [];
+      rawItems.forEach((item, itemIndex) => {
+        const itemName = String(item?.name || '').trim();
+        if (!itemName) return;
+        nextItems.push({
+          id: `ai_item_${Date.now()}_${categoryIndex}_${itemIndex}_${Math.random().toString(36).slice(2, 6)}`,
+          name: itemName,
+          description: '',
+          price: Number(item?.price || 0),
+          is_veg: item?.is_veg !== false,
+          category_id: categoryId,
+          photo_url: '',
+          prep_time_minutes: '',
+          is_available: true,
+        });
+      });
+    });
+
+    if (!nextCategories.length || !nextItems.length) {
+      toast.error('No menu items were detected in this image');
+      return;
+    }
+
+    setAiReviewCategories(nextCategories);
+    setAiReviewItems(nextItems);
+    setAiReviewOpen(true);
+    setAiImportOpen(true);
+  };
+
+  const updateAiCategoryName = (categoryId, value) => {
+    setAiReviewCategories((prev) => prev.map((category) => (category.id === categoryId ? { ...category, name: value } : category)));
+  };
+
+  const addAiCategory = () => {
+    setAiReviewCategories((prev) => ([
+      ...prev,
+      { id: `ai_cat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name: 'New Category' },
+    ]));
+  };
+
+  const removeAiCategory = (categoryId) => {
+    setAiReviewCategories((prev) => prev.filter((category) => category.id !== categoryId));
+    setAiReviewItems((prev) => prev.filter((item) => item.category_id !== categoryId));
+  };
+
+  const updateAiItem = (itemId, field, value) => {
+    setAiReviewItems((prev) => prev.map((item) => (item.id === itemId ? { ...item, [field]: value } : item)));
+  };
+
+  const addAiItem = (categoryId) => {
+    setAiReviewItems((prev) => ([
+      ...prev,
+      {
+        id: `ai_item_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: 'New Item',
+        description: '',
+        price: 0,
+        is_veg: true,
+        category_id: categoryId,
+        photo_url: '',
+        prep_time_minutes: '',
+        is_available: true,
+      },
+    ]));
+  };
+
+  const removeAiItem = (itemId) => {
+    setAiReviewItems((prev) => prev.filter((item) => item.id !== itemId));
+  };
+
+  const confirmAiImport = async () => {
+    if (!restaurantId) return;
+    if (!aiReviewCategories.length || !aiReviewItems.length) {
+      toast.error('Add at least one category and item');
+      return;
+    }
+
+    setAiImportSaving(true);
+    try {
+      const { count } = await supabaseRef.current.from('menu_categories').select('id', { count: 'exact', head: true }).eq('restaurant_id', restaurantId);
+      const insertedCategories = [];
+
+      for (let index = 0; index < aiReviewCategories.length; index += 1) {
+        const category = aiReviewCategories[index];
+        const { data, error } = await supabaseRef.current
+          .from('menu_categories')
+          .insert({ restaurant_id: restaurantId, name: category.name.trim(), sort_order: (count || 0) + index })
+          .select()
+          .single();
+        if (error) throw error;
+        insertedCategories.push({ tempId: category.id, realId: data.id });
+      }
+
+      const categoryMap = new Map(insertedCategories.map((entry) => [entry.tempId, entry.realId]));
+      const itemRows = aiReviewItems
+        .map((item, index) => ({
+          restaurant_id: restaurantId,
+          category_id: categoryMap.get(item.category_id),
+          name: item.name.trim(),
+          description: item.description || null,
+          price: Number(item.price || 0),
+          is_veg: item.is_veg !== false,
+          is_available: item.is_available !== false,
+          photo_url: item.photo_url || null,
+          prep_time_minutes: item.prep_time_minutes ? Number(item.prep_time_minutes) : null,
+          sort_order: index,
+        }))
+        .filter((item) => item.category_id && item.name);
+
+      if (!itemRows.length) throw new Error('No valid items to import');
+
+      const { error: itemError } = await supabaseRef.current.from('menu_items').insert(itemRows);
+      if (itemError) throw itemError;
+
+      setAiReviewOpen(false);
+      setAiImportOpen(false);
+      setAiReviewCategories([]);
+      setAiReviewItems([]);
+      await loadData();
+      toast.success('AI menu imported successfully');
+    } catch (error) {
+      toast.error(error?.message || 'Failed to import AI menu');
+    } finally {
+      setAiImportSaving(false);
+    }
+  };
+
   const categoryActions = async (category) => {
     const name = prompt('New category name', category.name);
     if (!name?.trim()) return;
@@ -334,9 +478,19 @@ export default function MenuManagementPage() {
 
           <section className="overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl md:text-2xl font-bold text-[#1A1A2E]">{categories.find((c) => c.id === selectedCategoryId)?.name || 'Items'}</h2>
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                <div>
+                  <h2 className="text-xl md:text-2xl font-bold text-[#1A1A2E]">{categories.find((c) => c.id === selectedCategoryId)?.name || 'Items'}</h2>
+                  <p className="text-xs text-gray-500 mt-1">Manage menu items manually or import a menu photo using AI.</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    icon={<ImagePlus size={14} />}
+                    onClick={() => setAiImportOpen((prev) => !prev)}
+                  >
+                    Import Menu Photo
+                  </Button>
                   <div className="relative">
                     <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 rounded-xl border border-gray-200 pl-8 pr-3 text-sm w-44 md:w-56" placeholder="Search item" />
@@ -346,6 +500,137 @@ export default function MenuManagementPage() {
               </div>
             </div>
             <div className="p-4">
+              {aiImportOpen && (
+                <div className="mb-5 rounded-2xl border border-orange-100 bg-orange-50/50 p-4 md:p-5 space-y-4 shadow-sm">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#FF6B35] font-bold">AI Import</p>
+                      <h3 className="text-lg font-bold text-[#1A1A2E] mt-1">Upload a menu photo to auto-create items</h3>
+                      <p className="text-sm text-gray-600">Use this after login to speed up menu setup. The extracted draft can be reviewed before saving.</p>
+                    </div>
+                    <Button variant="outline" onClick={() => setAiImportOpen(false)}>Close</Button>
+                  </div>
+
+                  <MenuAiScanner
+                    restaurantName={categories.find((c) => c.id === selectedCategoryId)?.name || 'Restaurant'}
+                    onScanComplete={handleAiScanComplete}
+                    onBusyChange={setAiImportBusy}
+                  />
+
+                  {aiImportBusy ? (
+                    <div className="rounded-xl bg-white border border-orange-100 px-4 py-3 text-sm text-[#FF6B35] font-semibold animate-pulse">
+                      Magic is happening… extracting the menu.
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {aiReviewOpen && (
+                <div className="fixed inset-0 z-[60] bg-black/40 flex items-end md:items-center justify-center p-3 md:p-6">
+                  <div className="w-full max-w-6xl max-h-[92vh] overflow-hidden bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col">
+                    <div className="sticky top-0 z-10 bg-gradient-to-r from-[#1A1A2E] to-[#22224A] text-white px-5 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/55">AI Import Wizard</p>
+                        <h3 className="text-lg md:text-xl font-bold mt-1">Review and clean extracted menu</h3>
+                        <p className="text-xs md:text-sm text-white/70 mt-1">Step 1: verify categories. Step 2: fix item names and prices. Step 3: confirm import.</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" className="bg-white text-[#1A1A2E]" onClick={() => setAiReviewOpen(false)}>Cancel</Button>
+                        <Button variant="primary" loading={aiImportSaving} onClick={confirmAiImport}>Confirm & Add</Button>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 md:p-5 grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-4">
+                      <div className="space-y-4">
+                        {aiReviewCategories.map((category, index) => {
+                          const categoryItems = aiReviewItems.filter((item) => item.category_id === category.id);
+                          return (
+                            <div key={category.id} className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 space-y-3">
+                              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <div className="flex items-center gap-2 min-w-0 w-full md:w-auto">
+                                  <span className="h-7 w-7 rounded-full bg-[#1A1A2E] text-white text-xs font-bold flex items-center justify-center shrink-0">{index + 1}</span>
+                                  <input
+                                    value={category.name}
+                                    onChange={(e) => updateAiCategoryName(category.id, e.target.value)}
+                                    className="w-full md:w-[360px] h-11 rounded-xl border border-gray-200 px-3 text-sm"
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => addAiItem(category.id)}>Add Item</Button>
+                                  <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50" onClick={() => removeAiCategory(category.id)}>
+                                    Remove Category
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                {categoryItems.length === 0 ? (
+                                  <div className="rounded-xl border border-dashed border-gray-200 text-xs text-gray-400 px-3 py-3">No items in this category yet.</div>
+                                ) : categoryItems.map((item) => (
+                                  <div key={item.id} className="grid grid-cols-1 md:grid-cols-[1fr_120px_100px_auto] gap-2 items-center rounded-xl border border-gray-100 bg-gray-50/60 p-2">
+                                    <input
+                                      value={item.name}
+                                      onChange={(e) => updateAiItem(item.id, 'name', e.target.value)}
+                                      className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm bg-white"
+                                      placeholder="Item name"
+                                    />
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={item.price}
+                                      onChange={(e) => updateAiItem(item.id, 'price', Number(e.target.value))}
+                                      className="w-full h-10 rounded-xl border border-gray-200 px-3 text-sm bg-white"
+                                      placeholder="Price"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => updateAiItem(item.id, 'is_veg', !item.is_veg)}
+                                      className={`h-10 rounded-xl border text-sm font-semibold ${item.is_veg ? 'bg-green-600 border-green-600 text-white' : 'bg-gray-100 border-gray-200 text-gray-600'}`}
+                                    >
+                                      {item.is_veg ? 'Veg' : 'Non-Veg'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeAiItem(item.id)}
+                                      className="h-10 w-10 rounded-xl border border-gray-200 text-red-500 hover:bg-red-50 flex items-center justify-center"
+                                      aria-label="Remove item"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <aside className="h-fit xl:sticky xl:top-0 rounded-2xl border border-gray-100 bg-[#F8F9FF] p-4 space-y-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Import Summary</p>
+                          <h4 className="text-base font-bold text-[#1A1A2E] mt-1">Ready to add</h4>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="rounded-xl bg-white border border-gray-100 p-3">
+                            <p className="text-[11px] text-gray-500">Categories</p>
+                            <p className="text-xl font-extrabold text-[#1A1A2E] mt-1">{aiReviewCategories.length}</p>
+                          </div>
+                          <div className="rounded-xl bg-white border border-gray-100 p-3">
+                            <p className="text-[11px] text-gray-500">Items</p>
+                            <p className="text-xl font-extrabold text-[#1A1A2E] mt-1">{aiReviewItems.length}</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" fullWidth onClick={addAiCategory}>Add Category</Button>
+                        <div className="pt-2 border-t border-gray-200 space-y-2">
+                          <Button variant="primary" fullWidth loading={aiImportSaving} onClick={confirmAiImport}>Confirm & Add</Button>
+                          <Button variant="outline" fullWidth onClick={() => setAiReviewOpen(false)}>Back to Scanner</Button>
+                        </div>
+                      </aside>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {Array.from({ length: 6 }).map((_, i) => (

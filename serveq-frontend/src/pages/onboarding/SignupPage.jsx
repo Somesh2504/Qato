@@ -21,6 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getSupabaseClient } from '../../lib/supabaseClient';
 import { formatIndianPrice, generateSlug } from '../../utils/helpers';
 import Button from '../../components/ui/Button';
+import MenuAiScanner from '../../components/ui/MenuAiScanner';
 import toast from 'react-hot-toast';
 
 const TOTAL_STEPS = 5;
@@ -62,6 +63,10 @@ export default function SignupPage() {
   const [draftCategories, setDraftCategories] = useState([]);
   const [draftItems, setDraftItems] = useState([]);
   const [selectedDraftCategory, setSelectedDraftCategory] = useState('');
+  const [scanningMenu, setScanningMenu] = useState(false);
+  const [aiReviewOpen, setAiReviewOpen] = useState(false);
+  const [aiReviewCategories, setAiReviewCategories] = useState([]);
+  const [aiReviewItems, setAiReviewItems] = useState([]);
 
   // Auth session (set after step 1 OR loaded from Google OAuth sessionStorage)
   const [authToken, setAuthToken] = useState('');
@@ -317,6 +322,93 @@ export default function SignupPage() {
 
   const removeDraftItem = (id) =>
     setDraftItems((prev) => prev.filter((x) => x.id !== id));
+
+  const handleAiMenuResults = (result) => {
+    const sourceCategories = Array.isArray(result?.categories) ? result.categories : [];
+    const nextCategories = [];
+    const nextItems = [];
+
+    sourceCategories.forEach((category, categoryIndex) => {
+      const categoryName = String(category?.name || `Category ${categoryIndex + 1}`).trim() || `Category ${categoryIndex + 1}`;
+      const categoryId = `ai_cat_${Date.now()}_${categoryIndex}_${Math.random().toString(36).slice(2, 6)}`;
+      nextCategories.push({ id: categoryId, name: categoryName });
+
+      const items = Array.isArray(category?.items) ? category.items : [];
+      items.forEach((item, itemIndex) => {
+        const itemName = String(item?.name || '').trim();
+        if (!itemName) return;
+        nextItems.push({
+          id: `ai_item_${Date.now()}_${categoryIndex}_${itemIndex}_${Math.random().toString(36).slice(2, 6)}`,
+          name: itemName,
+          price: Number(item?.price || 0),
+          is_veg: item?.is_veg !== false,
+          category_id: categoryId,
+        });
+      });
+    });
+
+    if (!nextCategories.length || !nextItems.length) {
+      toast.error('No usable menu items were detected. Please try another photo or add items manually.');
+      return;
+    }
+
+    setAiReviewCategories(nextCategories);
+    setAiReviewItems(nextItems);
+    setAiReviewOpen(true);
+    toast.success('AI menu draft is ready for review');
+  };
+
+  const updateAiCategoryName = (categoryId, value) => {
+    setAiReviewCategories((prev) => prev.map((category) => (
+      category.id === categoryId ? { ...category, name: value } : category
+    )));
+  };
+
+  const addAiCategory = () => {
+    const categoryId = `ai_cat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    setAiReviewCategories((prev) => [...prev, { id: categoryId, name: 'New Category' }]);
+  };
+
+  const removeAiCategory = (categoryId) => {
+    setAiReviewCategories((prev) => prev.filter((category) => category.id !== categoryId));
+    setAiReviewItems((prev) => prev.filter((item) => item.category_id !== categoryId));
+  };
+
+  const updateAiItem = (itemId, field, value) => {
+    setAiReviewItems((prev) => prev.map((item) => (
+      item.id === itemId ? { ...item, [field]: value } : item
+    )));
+  };
+
+  const addAiItem = (categoryId) => {
+    setAiReviewItems((prev) => [
+      ...prev,
+      {
+        id: `ai_item_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: 'New Item',
+        price: 0,
+        is_veg: true,
+        category_id: categoryId,
+      },
+    ]);
+  };
+
+  const removeAiItem = (itemId) => {
+    setAiReviewItems((prev) => prev.filter((item) => item.id !== itemId));
+  };
+
+  const confirmAiMenuDraft = () => {
+    if (!aiReviewCategories.length || !aiReviewItems.length) {
+      toast.error('Add at least one category and item before confirming');
+      return;
+    }
+
+    setDraftCategories(aiReviewCategories.map((category) => ({ id: category.id, name: category.name })));
+    setDraftItems(aiReviewItems.map((item) => ({ ...item })));
+    setSelectedDraftCategory(aiReviewCategories[0]?.id || '');
+    setAiReviewOpen(false);
+    toast.success('AI menu added to your draft');
+  };
 
   // ── Step 3 → 4: Persist everything to Supabase ──────────────────────────
   const completeOnboarding = async () => {
@@ -785,131 +877,267 @@ export default function SignupPage() {
           {/* ── STEP 4: Menu Setup ──────────────────────────────── */}
           {step === 4 && (
             <div className="space-y-4">
-              <h2 className="text-lg font-bold">Step 4 — Menu Setup Wizard</h2>
-              <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
-                <p className="text-sm font-medium">Let's add your first category</p>
-                <div className="flex gap-2">
-                  <input
-                    value={menuCategoryName}
-                    onChange={(e) => setMenuCategoryName(e.target.value)}
-                    className={inputCls}
-                    placeholder="e.g. Starters"
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDraftCategory())}
-                  />
-                  <Button type="button" variant="primary" onClick={addDraftCategory}>
-                    <Plus size={14} />
-                    Add
-                  </Button>
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 className="text-lg font-bold">Step 4 — Menu Setup Wizard</h2>
+                  <p className="text-sm text-gray-500">Start with AI scan or build your menu manually.</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {draftCategories.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setSelectedDraftCategory(c.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs border ${
-                        selectedDraftCategory === c.id
-                          ? 'bg-[#FF6B35] border-[#FF6B35] text-white'
-                          : 'bg-gray-100 border-gray-200 text-gray-700'
-                      }`}
-                    >
-                      {c.name}
-                    </button>
-                  ))}
+                <div className="text-xs text-gray-400">
+                  {draftCategories.length} categories · {draftItems.length} items ready
                 </div>
               </div>
 
-              <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
-                <p className="text-sm font-medium">Add your first item</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <input
-                    value={menuItemName}
-                    onChange={(e) => setMenuItemName(e.target.value)}
-                    className={inputCls}
-                    placeholder="Item name"
-                  />
-                  <input
-                    value={menuItemPrice}
-                    onChange={(e) => setMenuItemPrice(e.target.value)}
-                    type="number"
-                    className={inputCls}
-                    placeholder="Price ₹"
-                  />
-                  <select
-                    value={selectedDraftCategory}
-                    onChange={(e) => setSelectedDraftCategory(e.target.value)}
-                    className={inputCls}
-                  >
-                    <option value="">Select category</option>
-                    {draftCategories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+              <MenuAiScanner
+                restaurantName={shopName}
+                onScanComplete={handleAiMenuResults}
+                onBusyChange={setScanningMenu}
+              />
+
+              {scanningMenu ? (
+                <div className="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm text-[#FF6B35] font-semibold animate-pulse">
+                  Magic is happening… extracting categories and items from your menu photo.
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setMenuItemVeg(true)}
-                      className={`px-3 py-1.5 rounded-lg text-xs ${
-                        menuItemVeg ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      Veg
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMenuItemVeg(false)}
-                      className={`px-3 py-1.5 rounded-lg text-xs ${
-                        !menuItemVeg ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      Non-Veg
-                    </button>
-                  </div>
-                  <Button type="button" variant="primary" onClick={addDraftItem}>
-                    <Plus size={14} />
-                    Add Item
-                  </Button>
-                </div>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {draftItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-2.5 py-1.5"
-                    >
-                      <span>
-                        {item.name} · {formatIndianPrice(item.price)}
-                      </span>
-                      <button
-                        onClick={() => removeDraftItem(item.id)}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+              ) : null}
+
+              {aiReviewOpen ? (
+                <div className="space-y-4">
+                  <div className="rounded-2xl bg-[#1A1A2E] text-white p-4 md:p-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.2em] text-white/50">Review AI Results</p>
+                      <h3 className="text-xl font-bold mt-1">Check extracted categories and items</h3>
+                      <p className="text-sm text-white/65 mt-1">
+                        You can rename, add, remove, and correct prices before confirming.
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className="text-xs text-white/50 bg-white/10 px-3 py-2 rounded-xl">
+                      {aiReviewCategories.length} categories · {aiReviewItems.length} items
+                    </div>
+                  </div>
 
-              <div className="text-xs text-gray-400">
-                Progress: {draftCategories.length} categories · {draftItems.length} items
-              </div>
+                  <div className="space-y-3">
+                    {aiReviewCategories.map((category) => {
+                      const categoryItems = aiReviewItems.filter((item) => item.category_id === category.id);
+                      return (
+                        <div key={category.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <input
+                              value={category.name}
+                              onChange={(e) => updateAiCategoryName(category.id, e.target.value)}
+                              className={inputCls}
+                            />
+                            <div className="flex gap-2">
+                              <Button type="button" variant="outline" size="sm" onClick={() => addAiItem(category.id)}>
+                                <Plus size={14} />
+                                Add Item
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                onClick={() => removeAiCategory(category.id)}
+                              >
+                                <Trash2 size={14} />
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
 
-              <div className="pt-2 flex items-center justify-between gap-2">
-                <Button type="button" variant="outline" onClick={prev}>
-                  Back
-                </Button>
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={completeOnboarding} loading={loading}>
-                    Skip for now
-                  </Button>
-                  <Button type="button" variant="primary" onClick={completeOnboarding} loading={loading}>
-                    Finish Setup
-                  </Button>
+                          <div className="space-y-2">
+                            {categoryItems.map((item) => (
+                              <div key={item.id} className="grid grid-cols-1 md:grid-cols-[1fr_120px_110px_auto] gap-2 items-center">
+                                <input
+                                  value={item.name}
+                                  onChange={(e) => updateAiItem(item.id, 'name', e.target.value)}
+                                  className={inputCls}
+                                />
+                                <input
+                                  value={item.price}
+                                  onChange={(e) => updateAiItem(item.id, 'price', Number(e.target.value))}
+                                  type="number"
+                                  min="0"
+                                  className={inputCls}
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateAiItem(item.id, 'is_veg', true)}
+                                    className={`px-3 py-2 rounded-xl text-xs font-semibold border ${
+                                      item.is_veg ? 'bg-green-600 border-green-600 text-white' : 'bg-gray-100 border-gray-200 text-gray-600'
+                                    }`}
+                                  >
+                                    Veg
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateAiItem(item.id, 'is_veg', false)}
+                                    className={`px-3 py-2 rounded-xl text-xs font-semibold border ${
+                                      !item.is_veg ? 'bg-red-600 border-red-600 text-white' : 'bg-gray-100 border-gray-200 text-gray-600'
+                                    }`}
+                                  >
+                                    Non-Veg
+                                  </button>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAiItem(item.id)}
+                                  className="h-12 w-12 rounded-xl border border-gray-200 text-red-500 hover:bg-red-50 flex items-center justify-center"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="pt-2 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <Button type="button" variant="outline" onClick={() => setAiReviewOpen(false)}>
+                      Back to Manual Wizard
+                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" onClick={addAiCategory}>
+                        <Plus size={14} />
+                        Add Category
+                      </Button>
+                      <Button type="button" variant="primary" onClick={confirmAiMenuDraft}>
+                        Confirm & Add
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
+                    <p className="text-sm font-medium">Let's add your first category</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={menuCategoryName}
+                        onChange={(e) => setMenuCategoryName(e.target.value)}
+                        className={inputCls}
+                        placeholder="e.g. Starters"
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDraftCategory())}
+                      />
+                      <Button type="button" variant="primary" onClick={addDraftCategory}>
+                        <Plus size={14} />
+                        Add
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {draftCategories.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setSelectedDraftCategory(c.id)}
+                          className={`px-3 py-1.5 rounded-full text-xs border ${
+                            selectedDraftCategory === c.id
+                              ? 'bg-[#FF6B35] border-[#FF6B35] text-white'
+                              : 'bg-gray-100 border-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
+                    <p className="text-sm font-medium">Add your first item</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <input
+                        value={menuItemName}
+                        onChange={(e) => setMenuItemName(e.target.value)}
+                        className={inputCls}
+                        placeholder="Item name"
+                      />
+                      <input
+                        value={menuItemPrice}
+                        onChange={(e) => setMenuItemPrice(e.target.value)}
+                        type="number"
+                        className={inputCls}
+                        placeholder="Price ₹"
+                      />
+                      <select
+                        value={selectedDraftCategory}
+                        onChange={(e) => setSelectedDraftCategory(e.target.value)}
+                        className={inputCls}
+                      >
+                        <option value="">Select category</option>
+                        {draftCategories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setMenuItemVeg(true)}
+                          className={`px-3 py-1.5 rounded-lg text-xs ${
+                            menuItemVeg ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          Veg
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setMenuItemVeg(false)}
+                          className={`px-3 py-1.5 rounded-lg text-xs ${
+                            !menuItemVeg ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          Non-Veg
+                        </button>
+                      </div>
+                      <Button type="button" variant="primary" onClick={addDraftItem}>
+                        <Plus size={14} />
+                        Add Item
+                      </Button>
+                    </div>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {draftItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-2.5 py-1.5"
+                        >
+                          <span>
+                            {item.name} · {formatIndianPrice(item.price)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeDraftItem(item.id)}
+                            className="text-red-500 hover:text-red-600"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-400">
+                    Progress: {draftCategories.length} categories · {draftItems.length} items
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between gap-2">
+                    <Button type="button" variant="outline" onClick={prev}>
+                      Back
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" onClick={completeOnboarding} loading={loading}>
+                        Skip for now
+                      </Button>
+                      <Button type="button" variant="primary" onClick={completeOnboarding} loading={loading}>
+                        Finish Setup
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
