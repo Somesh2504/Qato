@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutGrid,
   ClipboardPlus,
+  MonitorPlay,
   UtensilsCrossed,
   BarChart3,
   Settings,
@@ -17,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 const navItems = [
   { to: '/admin/orders',    icon: LayoutGrid,      label: 'Orders' },
   { to: '/admin/manual-order', icon: ClipboardPlus, label: 'Manual Order' },
+  { to: '/admin/display-board', icon: MonitorPlay, label: 'Display Board' },
   { to: '/admin/menu',      icon: UtensilsCrossed, label: 'Menu' },
   { to: '/admin/analytics', icon: BarChart3,        label: 'Analytics' },
   { to: '/admin/settings',  icon: Settings,         label: 'Settings' },
