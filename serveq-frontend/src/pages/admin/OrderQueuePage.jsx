@@ -267,24 +267,24 @@ export default function OrderQueuePage() {
         const active = validUnpaidUpiFiltered
           .filter((o) => o.status === 'pending' || o.status === 'preparing' || o.status === 'cancellation_requested')
           .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-          
+
         const currentIndex = active.findIndex(o => o.id === orderId);
         if (currentIndex !== -1 && currentIndex + 1 < active.length) {
           const nextOrder = active[currentIndex + 1];
           const nextItem = (nextOrder.order_items || []).find(item => !item.is_done);
           if (nextItem) {
-             const colName = nextItem.item_name || nextItem.name;
-             const nextColId = `col-${colName.replace(/\s+/g, '-')}`;
-             setTimeout(() => {
-               const nextColEl = document.getElementById(nextColId);
-               if (nextColEl && nextColEl.parentElement) {
-                 const container = nextColEl.parentElement;
-                 container.scrollTo({
-                   left: nextColEl.offsetLeft - container.offsetLeft - (container.clientWidth / 2) + (nextColEl.clientWidth / 2),
-                   behavior: 'smooth'
-                 });
-               }
-             }, 100);
+            const colName = nextItem.item_name || nextItem.name;
+            const nextColId = `col-${colName.replace(/\s+/g, '-')}`;
+            setTimeout(() => {
+              const nextColEl = document.getElementById(nextColId);
+              if (nextColEl && nextColEl.parentElement) {
+                const container = nextColEl.parentElement;
+                container.scrollTo({
+                  left: nextColEl.offsetLeft - container.offsetLeft - (container.clientWidth / 2) + (nextColEl.clientWidth / 2),
+                  behavior: 'smooth'
+                });
+              }
+            }, 100);
           }
         }
       } else if (!allDone) {
@@ -613,11 +613,10 @@ export default function OrderQueuePage() {
             if (daysLeft > 2) return null;
             const isExpired = daysLeft < 0;
             return (
-              <div className={`rounded-2xl border px-5 py-4 flex items-start gap-3 animate-pulse ${
-                isExpired
+              <div className={`rounded-2xl border px-5 py-4 flex items-start gap-3 animate-pulse ${isExpired
                   ? 'bg-red-50 border-red-200'
                   : 'bg-amber-50 border-amber-200'
-              }`}>
+                }`}>
                 <AlertTriangle size={22} className={isExpired ? 'text-red-500 mt-0.5' : 'text-amber-500 mt-0.5'} />
                 <div>
                   <p className={`font-bold text-sm ${isExpired ? 'text-red-700' : 'text-amber-700'}`}>
@@ -708,11 +707,10 @@ export default function OrderQueuePage() {
                                     ×{token.quantity}
                                   </span>
                                   <span
-                                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ${
-                                      token.orderType === 'parcel'
+                                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ${token.orderType === 'parcel'
                                         ? 'bg-purple-100 text-purple-700'
                                         : 'bg-emerald-100 text-emerald-700'
-                                    }`}
+                                      }`}
                                   >
                                     {token.orderType === 'parcel' ? '📦 Parcel' : '🍽️ Eat'}
                                   </span>

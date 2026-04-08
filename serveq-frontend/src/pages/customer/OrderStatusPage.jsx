@@ -12,10 +12,12 @@ import BottomSheet from '../../components/ui/BottomSheet';
 import toast from 'react-hot-toast';
 import SkeletonCard from '../../components/ui/SkeletonCard';
 import { useSeoForCustomer } from '../../hooks/useSeoForCustomer';
+import { useNotificationSound } from '../../hooks/useNotificationSound';
 
 export default function OrderStatusPage() {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const { playSound } = useNotificationSound();
 
   const supabase = useMemo(() => {
     try {
@@ -66,6 +68,11 @@ export default function OrderStatusPage() {
 
   // Queue recalculation base for realtime callbacks
   const queueBaseRef = useRef({ restaurantId: null, createdAt: null });
+
+  // Notification sounds — track previous states to fire sounds only once when state changes
+  const prevQueueAheadRef = useRef(0);
+  const soundFiredForReadyRef = useRef(false);
+  const soundFiredForDoneRef = useRef(false);
 
   // Rating UI
   const [ratingOpen, setRatingOpen] = useState(false);
@@ -260,6 +267,12 @@ export default function OrderStatusPage() {
 
             if (prevStatus !== nextStatus && nextStatus === 'done' && !confettiFiredRef.current) {
               confettiFiredRef.current = true;
+              // Play notification sound
+              if (!soundFiredForDoneRef.current) {
+                soundFiredForDoneRef.current = true;
+                playSound();
+                toast.success('🎉 Your order is ready for pickup!', { duration: 4000 });
+              }
               confetti({
                 particleCount: 180,
                 spread: 90,
@@ -374,6 +387,16 @@ export default function OrderStatusPage() {
       if (ratingTimerRef.current) clearTimeout(ratingTimerRef.current);
     };
   }, [order?.status, supabase]);
+
+  // Monitor queue changes and play sound when customer is next (queueAhead === 1)
+  useEffect(() => {
+    if (queueAhead === 1 && prevQueueAheadRef.current !== 1 && !soundFiredForReadyRef.current) {
+      soundFiredForReadyRef.current = true;
+      playSound();
+      toast.success('⏭️ You\'re next! Order is being prepared.', { duration: 4000 });
+    }
+    prevQueueAheadRef.current = queueAhead;
+  }, [queueAhead, playSound]);
 
   const statusPillKey = useMemo(() => `${order?.status || 'pending'}:${statusAnimKey}`, [order?.status, statusAnimKey]);
 

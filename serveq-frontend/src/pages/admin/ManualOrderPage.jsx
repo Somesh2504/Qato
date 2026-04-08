@@ -243,9 +243,8 @@ export default function ManualOrderPage() {
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <button
                 onClick={() => setActiveCategoryId('all')}
-                className={`px-3 py-2 rounded-full text-xs font-semibold ${
-                  activeCategoryId === 'all' ? 'bg-[#FF6B35] text-white' : 'bg-gray-100 text-gray-600'
-                }`}
+                className={`px-3 py-2 rounded-full text-xs font-semibold ${activeCategoryId === 'all' ? 'bg-[#FF6B35] text-white' : 'bg-gray-100 text-gray-600'
+                  }`}
               >
                 All
               </button>
@@ -253,9 +252,8 @@ export default function ManualOrderPage() {
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategoryId(cat.id)}
-                  className={`px-3 py-2 rounded-full text-xs font-semibold ${
-                    activeCategoryId === cat.id ? 'bg-[#FF6B35] text-white' : 'bg-gray-100 text-gray-600'
-                  }`}
+                  className={`px-3 py-2 rounded-full text-xs font-semibold ${activeCategoryId === cat.id ? 'bg-[#FF6B35] text-white' : 'bg-gray-100 text-gray-600'
+                    }`}
                 >
                   {cat.name}
                 </button>
@@ -319,17 +317,15 @@ export default function ManualOrderPage() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setOrderType('eat')}
-                  className={`rounded-xl px-3 py-2 text-sm font-semibold border ${
-                    orderType === 'eat' ? 'border-[#FF6B35] text-[#FF6B35] bg-orange-50' : 'border-gray-200 text-gray-600'
-                  }`}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold border ${orderType === 'eat' ? 'border-[#FF6B35] text-[#FF6B35] bg-orange-50' : 'border-gray-200 text-gray-600'
+                    }`}
                 >
                   Eat
                 </button>
                 <button
                   onClick={() => setOrderType('parcel')}
-                  className={`rounded-xl px-3 py-2 text-sm font-semibold border ${
-                    orderType === 'parcel' ? 'border-[#FF6B35] text-[#FF6B35] bg-orange-50' : 'border-gray-200 text-gray-600'
-                  }`}
+                  className={`rounded-xl px-3 py-2 text-sm font-semibold border ${orderType === 'parcel' ? 'border-[#FF6B35] text-[#FF6B35] bg-orange-50' : 'border-gray-200 text-gray-600'
+                    }`}
                 >
                   Parcel
                 </button>
