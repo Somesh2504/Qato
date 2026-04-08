@@ -30,10 +30,10 @@ router.post('/create-order', async (req, res) => {
   }
 
   try {
-    // Validate restaurant exists
+    // Validate restaurant exists and get route account id
     const { data: restaurant, error: rErr } = await supabase
       .from('restaurants')
-      .select('id, name')
+      .select('id, name, razorpay_account_id')
       .eq('id', restaurant_id)
       .single();
 
@@ -41,13 +41,32 @@ router.post('/create-order', async (req, res) => {
       return res.status(404).json({ error: 'Restaurant not found' });
     }
 
+    if (!restaurant.razorpay_account_id) {
+      return res.status(400).json({ error: 'Restaurant has not configured a payment receiving account (Razorpay Route)' });
+    }
+
     const razorpay = getRazorpay();
 
-    const rpOrder = await razorpay.orders.create({
+    const rpOrderOptions = {
       amount: Math.round(amount * 100), // convert to paise
       currency: 'INR',
       receipt: `serveq_${Date.now()}`,
-    });
+      transfers: [
+        {
+          account: restaurant.razorpay_account_id,
+          amount: Math.round(amount * 100),
+          currency: 'INR',
+          notes: {
+            name: `Transfer to ${restaurant.name}`,
+            restaurant_id: restaurant.id
+          },
+          linked_account_notes: ['restaurant_id'],
+          on_hold: 0
+        }
+      ]
+    };
+
+    const rpOrder = await razorpay.orders.create(rpOrderOptions);
 
     res.json({
       razorpay_order_id: rpOrder.id,
@@ -186,8 +205,10 @@ router.post('/refund', authMiddleware, async (req, res) => {
   try {
     const razorpay = getRazorpay();
 
-    // Issue refund via Razorpay
-    const refund = await razorpay.payments.refund(razorpay_payment_id, {});
+    // Issue refund via Razorpay (reverses transfers automatically on Route)
+    const refund = await razorpay.payments.refund(razorpay_payment_id, {
+      reverse_all: 1
+    });
 
     // Update order in DB
     const { data, error } = await supabase

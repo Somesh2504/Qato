@@ -23,7 +23,7 @@ router.put('/profile', async (req, res) => {
   const allowed = [
     'name', 'address', 'phone', 'logo_url',
     'opening_time', 'closing_time', 'default_prep_time',
-    'razorpay_key_id',
+    'razorpay_key_id', 'razorpay_account_id',
   ];
 
   const updates = {};
