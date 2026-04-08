@@ -69,9 +69,20 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const supabase = getSupabaseClient();
+      
+      const updatePayload = {
+        name: profile.name,
+        slug: profile.slug,
+        address: profile.address,
+        phone: profile.phone,
+        opening_time: profile.opening_time,
+        closing_time: profile.closing_time,
+        razorpay_account_id: profile.razorpay_account_id
+      };
+
       const { error } = await supabase
         .from('restaurants')
-        .update(profile)
+        .update(updatePayload)
         .eq('id', restaurantId);
         
       if (error) throw error;
