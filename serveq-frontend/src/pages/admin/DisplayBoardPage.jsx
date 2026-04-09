@@ -132,9 +132,9 @@ export default function DisplayBoardPage() {
             {screenError}
           </div>
         ) : loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+          <div className="flex flex-col gap-3 md:gap-4">
             {Array.from({ length: 10 }).map((_, index) => (
-              <div key={index} className="h-28 md:h-32 rounded-2xl bg-gray-100 animate-pulse" />
+              <div key={index} className="h-24 md:h-28 rounded-2xl bg-gray-100 animate-pulse" />
             ))}
           </div>
         ) : activeTokens.length === 0 ? (
@@ -145,15 +145,40 @@ export default function DisplayBoardPage() {
         ) : (
           <>
             <div className="mb-4 text-lg md:text-xl font-bold text-[#1A1A2E]">Now Serving Queue: {activeTokens.length} token{activeTokens.length > 1 ? 's' : ''}</div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+            <div className="flex flex-col gap-3 md:gap-4">
               {activeTokens.map((order, index) => (
                 <div
                   key={order.id}
-                  className="rounded-2xl border border-[#262B46] bg-[#1A1F38] shadow-sm p-4 md:p-5 min-h-[130px] md:min-h-[160px] flex flex-col justify-between"
+                  className="flex items-center rounded-2xl border border-[#262B46] bg-[#1A1F38] shadow-sm p-4 md:p-5"
                 >
-                  <p className="text-xs md:text-sm uppercase tracking-[0.16em] font-semibold text-white/60">Queue #{index + 1}</p>
-                  <p className="text-5xl md:text-6xl font-black text-[#FF6B35] leading-none">{order.token_number}</p>
-                  <p className="text-sm md:text-base text-white/65 font-medium">Token</p>
+                  <div className="flex-shrink-0 flex flex-col items-center justify-center w-24 md:w-32 py-2 border-r border-[#262B46]/50 pr-4 md:pr-6 mr-4 md:mr-6">
+                    <p className="text-sm md:text-base text-white/65 font-medium mb-1">Token</p>
+                    <p className="text-5xl md:text-6xl font-black text-[#FF6B35] leading-none">{order.token_number}</p>
+                  </div>
+                  
+                  <div className="flex-1 flex flex-col justify-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs md:text-sm uppercase tracking-[0.16em] font-semibold text-white/60">Queue #{index + 1}</p>
+                      <span className="text-xs md:text-sm font-semibold rounded-full px-3 py-1 bg-white/10 text-white/90 capitalize">
+                        {order.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm md:text-base text-white/80">
+                        Payment: <span className="font-semibold uppercase text-white">{order.payment_type}</span>
+                      </p>
+                      {order.payment_type !== 'cash' && order.payment_status && (
+                        <p className={`text-sm md:text-base font-semibold capitalize ${
+                          order.payment_status === 'paid' ? 'text-green-400' : 'text-yellow-400'
+                        }`}>
+                          ({order.payment_status})
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-xs md:text-sm text-white/40">
+                      Added: {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
