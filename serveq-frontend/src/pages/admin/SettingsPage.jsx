@@ -25,6 +25,7 @@ export default function SettingsPage() {
     name: '', slug: '', description: '', address: '', phone: '',
     cuisine_type: '', opening_time: '09:00', closing_time: '22:00',
     upi_id: '', accepts_cash: true, tax_percentage: 0,
+    razorpay_account_id: '',
   });
   const [notifications, setNotifications] = useState({
     new_order: true,
@@ -68,9 +69,20 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const supabase = getSupabaseClient();
+      
+      const updatePayload = {
+        name: profile.name,
+        slug: profile.slug,
+        address: profile.address,
+        phone: profile.phone,
+        opening_time: profile.opening_time,
+        closing_time: profile.closing_time,
+        razorpay_account_id: profile.razorpay_account_id
+      };
+
       const { error } = await supabase
         .from('restaurants')
-        .update(profile)
+        .update(updatePayload)
         .eq('id', restaurantId);
         
       if (error) throw error;
@@ -132,6 +144,12 @@ export default function SettingsPage() {
                       <input value={profile.slug} onChange={e => setProfile(p => ({ ...p, slug: e.target.value }))}
                         placeholder="your-restaurant" className="flex-1 px-3 py-2.5 text-sm focus:outline-none" />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Razorpay Linked Account ID (Route)</label>
+                    <input value={profile.razorpay_account_id || ''} onChange={e => setProfile(p => ({ ...p, razorpay_account_id: e.target.value }))}
+                      placeholder="acc_xxxxxxxxxx" className={inputCls} />
+                    <p className="text-xs text-gray-400 mt-1">Found in Razorpay Dashboard → Route → Accounts. Required for receiving online payments.</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
