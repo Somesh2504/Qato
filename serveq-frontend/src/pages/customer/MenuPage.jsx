@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, Leaf, Minus, Plus, Search } from 'lucide-react';
+import { Player } from '@lottiefiles/react-lottie-player';
 import toast from 'react-hot-toast';
 
 import { getSupabaseClient } from '../../lib/supabaseClient';
@@ -16,6 +17,7 @@ import Button from '../../components/ui/Button';
 import { useSeoForCustomer } from '../../hooks/useSeoForCustomer';
 import { useAddToHomeScreenPrompt } from '../../hooks/useAddToHomeScreenPrompt';
 import { useSupabaseChannelReconnect } from '../../hooks/useSupabaseChannelReconnect';
+import foodChoiceAnimation from '../../../Food Choice.json';
 
 export default function MenuPage() {
   const { slug } = useParams();
@@ -240,34 +242,52 @@ export default function MenuPage() {
       <div ref={headerRef} className="sticky top-0 z-20 bg-white shadow-sm">
         {!loading && restaurant && (
           <div className="bg-gradient-to-r from-[#1A1A2E] to-[#16213E] px-4 pt-5 pb-4">
-            <h1 className="text-xl font-bold text-white">{restaurant.name}</h1>
-            <div className="flex flex-wrap items-center justify-between mt-1.5 gap-2">
-              <div className="flex items-center gap-2 text-white/60 text-xs flex-wrap">
-                {restaurant.cuisine_type && <span>{restaurant.cuisine_type}</span>}
-                {restaurant.cuisine_type && restaurant.opening_time && <span>·</span>}
-                {restaurant.opening_time && (
-                  <span className="flex items-center gap-1">
-                    <Clock size={11} />
-                    {restaurant.opening_time} – {restaurant.closing_time}
-                  </span>
+            <div className="flex items-end gap-2">
+              <h1
+                className="text-xl font-bold text-white leading-tight truncate flex-[1.2] min-w-0"
+                title={restaurant.name}
+              >
+                {restaurant.name}
+              </h1>
+              <div className="flex items-end gap-2 flex-1 min-w-0">
+                <div className="self-end w-full h-[56px] mr-2">
+                  <Player
+                    autoplay
+                    loop
+                    src={foodChoiceAnimation}
+                    className="w-full h-full"
+                    style={{ height: '100%' }}
+                  />
+                </div>
+              </div>
+              <div className="flex items-end flex-shrink-0">
+                {hasSessionOrders && (
+                  <button
+                    onClick={() => {
+                      try {
+                        const history = JSON.parse(localStorage.getItem('qato_session_orders') || '[]');
+                        const restOrders = history.filter(o => o.restaurant_id === restaurant?.id);
+                        if (restOrders.length > 0) {
+                          const active = restOrders.sort((a,b) => new Date(b.created_at) - new Date(a.created_at))[0];
+                          navigate(`/order/${active.id}`);
+                        }
+                      } catch {}
+                    }}
+                    className="text-white text-[10px] font-extrabold w-12 h-12 bg-[#FF6B35] rounded-xl hover:bg-[#E55A24] transition-all shadow-md shadow-black/20 tracking-wide flex items-center justify-center text-center leading-[1.1]"
+                  >
+                    Your Orders
+                  </button>
                 )}
               </div>
-              {hasSessionOrders && (
-                <button
-                  onClick={() => {
-                    try {
-                      const history = JSON.parse(localStorage.getItem('qato_session_orders') || '[]');
-                      const restOrders = history.filter(o => o.restaurant_id === restaurant?.id);
-                      if (restOrders.length > 0) {
-                        const active = restOrders.sort((a,b) => new Date(b.created_at) - new Date(a.created_at))[0];
-                        navigate(`/order/${active.id}`);
-                      }
-                    } catch {}
-                  }}
-                  className="text-white text-xs font-extrabold px-4 py-2 bg-[#FF6B35] rounded-full hover:bg-[#E55A24] transition-all flex-shrink-0 shadow-md shadow-black/20 tracking-wide"
-                >
-                  Your Orders
-                </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-white/60 text-xs mt-1.5">
+              {restaurant.cuisine_type && <span>{restaurant.cuisine_type}</span>}
+              {restaurant.cuisine_type && restaurant.opening_time && <span>·</span>}
+              {restaurant.opening_time && (
+                <span className="flex items-center gap-1">
+                  <Clock size={11} />
+                  {restaurant.opening_time} – {restaurant.closing_time}
+                </span>
               )}
             </div>
           </div>
@@ -357,16 +377,26 @@ export default function MenuPage() {
                 <span>{cat}</span>
                 <span className="text-xs font-normal text-gray-400">({catItems.length})</span>
               </h2>
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {catItems.map((item) => {
                   const qty = getQuantity(item.id);
                   return (
                     <div
                       key={item.id}
-                      className="bg-white rounded-[12px] border border-gray-100 shadow-sm flex gap-3 overflow-hidden hover:shadow-md transition-shadow animate-fade-in"
+                      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow animate-fade-in"
                     >
-                      <div className="flex-1 p-4 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                      <div className="relative">
+                        {item.image_url ? (
+                          <div className="aspect-square w-full">
+                            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="aspect-square w-full bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center text-3xl">
+                            {item.is_veg ? '≡ƒÑù' : '≡ƒìù'}
+                          </div>
+                        )}
+
+                        <div className="absolute top-2 left-2 flex items-center gap-1.5">
                           <span className={item.is_veg ? 'veg-dot' : 'nonveg-dot'} />
                           {item.is_bestseller && (
                             <Badge variant="warning" size="xs">
@@ -375,59 +405,64 @@ export default function MenuPage() {
                           )}
                         </div>
 
-                        <h3 className="font-semibold text-[#1A1A2E] text-sm leading-tight">{item.name}</h3>
-                        {item.description ? (
-                          <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">{item.description}</p>
-                        ) : null}
-
-                        <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                          <span className={item.is_veg ? 'text-[#22C55E]' : 'text-[#DC2626]'} style={{ fontWeight: 'bold' }}>{formatIndianPrice(item.price)}</span>
-                          {item.prep_time_minutes ? (
-                            <span className="text-xs text-gray-400 flex items-center gap-1">
-                              <Clock size={10} />
-                              {formatTime(item.prep_time_minutes)}
-                            </span>
-                          ) : null}
-                        </div>
                       </div>
 
-                      <div className="relative flex-shrink-0 w-28">
-                        {item.image_url ? (
-                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover min-h-[100px]" />
-                        ) : (
-                          <div className="w-full min-h-[100px] bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center text-3xl">
-                            {item.is_veg ? '≡ƒÑù' : '≡ƒìù'}
-                          </div>
-                        )}
-
-                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                          {qty === 0 ? (
-                            <button
-                              onClick={() => handleAdd(item)}
-                              className="flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-[#FF6B35] text-[#FF6B35] rounded text-[9px] font-bold shadow-sm hover:bg-[#FF6B35] hover:text-white transition-all active:scale-95 min-h-[24px]"
-                            >
-                              <Plus size={10} /> ADD
-                            </button>
-                          ) : (
-                            <div className="flex items-center gap-1 bg-[#FF6B35] text-white rounded px-1.5 py-0.5 shadow-sm min-h-[24px]">
-                              <button
-                                onClick={() => updateQuantity(item.id, qty - 1)}
-                                className="hover:bg-[#E55A24] rounded p-0.5 transition-colors"
-                                aria-label="Decrease quantity"
+                      <div className="p-3">
+                        <div className="flex items-start gap-2">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-[#1A1A2E] text-sm leading-tight line-clamp-2">
+                              {item.name}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span
+                                className={item.is_veg ? 'text-[#22C55E]' : 'text-[#DC2626]'}
+                                style={{ fontWeight: 'bold' }}
                               >
-                                <Minus size={9} />
-                              </button>
-                              <span className="text-[9px] font-bold min-w-[12px] text-center">{qty}</span>
-                              <button
-                                onClick={() => addItem(item)}
-                                className="hover:bg-[#E55A24] rounded p-0.5 transition-colors"
-                                aria-label="Increase quantity"
-                              >
-                                <Plus size={9} />
-                              </button>
+                                {formatIndianPrice(item.price)}
+                              </span>
+                              {item.prep_time_minutes ? (
+                                <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                                  <Clock size={10} />
+                                  {formatTime(item.prep_time_minutes)}
+                                </span>
+                              ) : null}
                             </div>
-                          )}
+                          </div>
+                          <div className="flex-1">
+                            {qty === 0 ? (
+                              <button
+                                onClick={() => handleAdd(item)}
+                                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-[#FF6B35] text-white rounded-lg text-xs font-bold shadow-sm hover:bg-[#E55A24] transition-all active:scale-95 min-h-[44px]"
+                              >
+                                <Plus size={12} /> ADD
+                              </button>
+                            ) : (
+                              <div className="w-full flex items-center justify-between bg-[#FF6B35] text-white rounded-lg px-3 py-2 shadow-sm min-h-[44px]">
+                                <button
+                                  onClick={() => updateQuantity(item.id, qty - 1)}
+                                  className="hover:bg-[#E55A24] rounded p-1 transition-colors"
+                                  aria-label="Decrease quantity"
+                                >
+                                  <Minus size={12} />
+                                </button>
+                                <span className="text-sm font-bold min-w-[16px] text-center">{qty}</span>
+                                <button
+                                  onClick={() => addItem(item)}
+                                  className="hover:bg-[#E55A24] rounded p-1 transition-colors"
+                                  aria-label="Increase quantity"
+                                >
+                                  <Plus size={12} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
+
+                        {item.description ? (
+                          <p className="text-xs text-gray-400 mt-2 line-clamp-2 leading-relaxed">
+                            {item.description}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   );

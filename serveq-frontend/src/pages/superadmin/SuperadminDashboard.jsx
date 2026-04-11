@@ -21,9 +21,13 @@ import toast from 'react-hot-toast';
 
 const PLAN_COLORS = {
   Free: 'bg-gray-100 text-gray-700',
-  Starter: 'bg-blue-100 text-blue-700',
-  Premium: 'bg-purple-100 text-purple-700',
+  'Inaugural Offer': 'bg-purple-100 text-purple-700',
 };
+
+function getDisplayPlan(plan) {
+  if (!plan || plan === 'Free') return 'Free';
+  return 'Inaugural Offer';
+}
 
 function daysUntil(dateStr) {
   if (!dateStr) return Infinity;
@@ -134,9 +138,9 @@ export default function SuperadminDashboard() {
       return d <= 5 && d >= 0;
     }).length;
     const expired = restaurants.filter(r => daysUntil(r.subscription_end_date) < 0).length;
-    const premium = restaurants.filter(r => r.subscription_plan === 'Premium').length;
-    const starter = restaurants.filter(r => r.subscription_plan === 'Starter').length;
-    return { total, expiring, expired, premium, starter };
+    const free = restaurants.filter(r => !r.subscription_plan || r.subscription_plan === 'Free').length;
+    const offer = restaurants.filter(r => r.subscription_plan && r.subscription_plan !== 'Free').length;
+    return { total, expiring, expired, free, offer };
   }, [restaurants]);
 
   const handleLogout = async () => {
@@ -187,8 +191,8 @@ export default function SuperadminDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             { label: 'Total Restaurants', value: stats.total, icon: Building2, color: 'text-[#FF6B35]' },
-            { label: 'Starter Plans', value: stats.starter, icon: Users, color: 'text-blue-500' },
-            { label: 'Premium Plans', value: stats.premium, icon: Crown, color: 'text-purple-500' },
+            { label: 'Free Plans', value: stats.free, icon: Users, color: 'text-gray-500' },
+            { label: 'Inaugural Offer Plans', value: stats.offer, icon: Crown, color: 'text-purple-500' },
             { label: 'Expiring Soon', value: stats.expiring, icon: AlertTriangle, color: 'text-yellow-500' },
             { label: 'Expired', value: stats.expired, icon: XCircle, color: 'text-red-500' },
           ].map(s => (
@@ -289,8 +293,8 @@ export default function SuperadminDashboard() {
                           </td>
                           <td className="px-4 py-3 text-gray-700">{r.owner_email}</td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${PLAN_COLORS[plan] || PLAN_COLORS.Free}`}>
-                              {plan}
+                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${PLAN_COLORS[getDisplayPlan(plan)] || PLAN_COLORS.Free}`}>
+                              {getDisplayPlan(plan)}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-gray-600 text-xs">

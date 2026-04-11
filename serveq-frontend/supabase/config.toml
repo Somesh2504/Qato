@@ -1,0 +1,8 @@
+[functions.process-menu-image]
+verify_jwt = false
+
+[functions.create-razorpay-order]
+verify_jwt = false
+
+[functions.issue-razorpay-refund]
+verify_jwt = true

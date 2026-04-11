@@ -792,7 +792,7 @@ export default function SignupPage() {
             <div className="space-y-4">
               <h2 className="text-lg font-bold">Step 3 — Choose Your Plan</h2>
               <p className="text-sm text-gray-500">Select a plan to get started. You can always upgrade later.</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-4xl">
                 {[
                   {
                     id: 'Free',
@@ -805,24 +805,14 @@ export default function SignupPage() {
                     badge: null,
                   },
                   {
-                    id: 'Starter',
-                    name: 'Starter',
+                    id: 'Premium',
+                    name: 'Inaugural Offer',
                     price: '₹1,000',
                     period: '/month',
-                    features: ['Digital QR Menu', 'Live Order Queue', 'UPI & Cash Payments', 'Email Support'],
-                    color: 'border-blue-200',
-                    accent: 'bg-blue-100 text-blue-700',
-                    badge: null,
-                  },
-                  {
-                    id: 'Premium',
-                    name: 'Premium',
-                    price: '₹1,500',
-                    period: '/month',
-                    features: ['Everything in Starter', 'Order Analytics', 'Finance Reports (CSV)', 'Priority Support'],
+                    features: ['Digital QR Menu', 'Live Order Queue', 'UPI & Cash Payments', 'Order Analytics', 'Priority Support'],
                     color: 'border-purple-200',
                     accent: 'bg-purple-100 text-purple-700',
-                    badge: 'Most Popular',
+                    badge: '33.33% Off · Limited Time',
                   },
                 ].map(plan => (
                   <button
@@ -843,7 +833,10 @@ export default function SignupPage() {
                     <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold mb-3 ${plan.accent}`}>
                       {plan.name}
                     </span>
-                    <div className="flex items-baseline gap-1 mb-3">
+                    <div className="flex items-baseline gap-2 mb-3 flex-wrap">
+                      {plan.id === 'Premium' && (
+                        <span className="text-sm font-semibold text-gray-400 line-through">₹1,500</span>
+                      )}
                       <span className="text-2xl font-extrabold text-[#1A1A2E]">{plan.price}</span>
                       <span className="text-sm text-gray-400">{plan.period}</span>
                     </div>

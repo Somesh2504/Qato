@@ -382,16 +382,16 @@ export default function LandingPage() {
             <div className="section-eyebrow">💰 Pricing</div>
             <h2 className="section-title">Simple, Transparent Pricing</h2>
             <p className="section-desc">
-              Start for free and scale as you grow. No hidden charges, no surprises.
+              Start free, then unlock the inaugural offer for premium access at a lower launch price.
             </p>
           </div>
 
           <div className="pricing-card scroll-animate animate-scale-in delay-200">
-            <div className="pricing-badge">Full Premium Access</div>
+            <div className="pricing-badge">Inaugural Offer · 33.33% Off</div>
             <div className="pricing-amount">
-              14-Day <span>/ Free Trial</span>
+              ₹1,000 <span>/ month</span>
             </div>
-            <p className="pricing-desc">Test all QRAVE features in your restaurant before you decide.</p>
+            <p className="pricing-desc">Original price ₹1,500. Launch offer available for a limited time only.</p>
 
             <ul className="pricing-features">
               {[
@@ -402,7 +402,7 @@ export default function LandingPage() {
                 'Priority support access',
                 'Mobile-optimized menus',
                 'Customer rating system',
-                'No credit card required',
+                'No hidden charges during the offer period',
               ].map((feat) => (
                 <li key={feat}>
                   <span className="pricing-check">✓</span>
@@ -412,7 +412,7 @@ export default function LandingPage() {
             </ul>
 
             <button className="pricing-cta" onClick={() => navigate('/signup')}>
-              Start Free Trial
+              Claim Inaugural Offer
               <ArrowRight size={18} style={{ marginLeft: 8, verticalAlign: 'middle' }} />
             </button>
           </div>
