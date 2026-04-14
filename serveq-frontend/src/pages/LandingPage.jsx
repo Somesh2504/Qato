@@ -429,19 +429,15 @@ export default function LandingPage() {
       <section className="pricing-section" id="pricing">
         <div className="section-container">
           <div className="section-header scroll-animate animate-fade-in-up">
-            <div className="section-eyebrow">💰 Pricing</div>
-            <h2 className="section-title">Simple, Transparent Pricing</h2>
+            <div className="section-eyebrow">⭐ Features</div>
+            <h2 className="section-title">Claim These Features</h2>
             <p className="section-desc">
-              Start free, then unlock the inaugural offer for premium access at a lower launch price.
+              Everything your restaurant needs to go digital and scale smoothly.
             </p>
           </div>
 
           <div className="pricing-card scroll-animate animate-scale-in delay-200">
-            <div className="pricing-badge">Inaugural Offer · 33.33% Off</div>
-            <div className="pricing-amount">
-              ₹1,000 <span>/ month</span>
-            </div>
-            <p className="pricing-desc">Original price ₹1,500. Launch offer available for a limited time only.</p>
+            <div className="pricing-badge">All-in-One Restaurant Toolkit</div>
 
             <ul className="pricing-features">
               {[
@@ -462,7 +458,7 @@ export default function LandingPage() {
             </ul>
 
             <button className="pricing-cta" onClick={() => navigate('/signup')}>
-              Claim Inaugural Offer
+              Get Started
               <ArrowRight size={18} style={{ marginLeft: 8, verticalAlign: 'middle' }} />
             </button>
           </div>
