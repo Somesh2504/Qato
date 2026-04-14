@@ -280,7 +280,9 @@ export default function CheckoutPage() {
           // Ignore cleanup/update errors.
         }
       }
-      setFailure(error.message || 'UPI payment failed', handleUpiPayment, 'Retry Payment');
+      const backendError = error.response?.data?.error;
+      const errorMsg = backendError || error.message || 'UPI payment failed';
+      setFailure(errorMsg, handleUpiPayment, 'Retry Payment');
     } finally {
       setProcessing(false);
     }

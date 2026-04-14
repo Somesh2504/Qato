@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const restaurantRoutes = require('./routes/restaurant');
@@ -13,15 +14,37 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+app.set('trust proxy', 1); // Required for rate limiting behind reverse proxies like Render
 app.use(cors({ origin: '*' }));
 app.use(express.json());
+
+// ── Rate Limiting ────────────────────────────────────────────────────────────
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 150, // 150 requests per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+const paymentLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 20, // Strict limit: 20 payment/order attempts per minute per IP to block spam/bots
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many payment/order attempts, please wait.' }
+});
+
+// Apply generic limiter to all API routes
+app.use('/api', apiLimiter);
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/restaurant', restaurantRoutes);
 app.use('/api/menu', menuRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/payments', paymentRoutes);
+// Apply strict limiter on endpoints that cost DB rows or external API bandwidth
+app.use('/api/orders', paymentLimiter, orderRoutes);
+app.use('/api/payments', paymentLimiter, paymentRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // ── Health Check ──────────────────────────────────────────────────────────────

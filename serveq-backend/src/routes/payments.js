@@ -5,6 +5,10 @@ const crypto = require('crypto');
 const supabase = require('../config/supabase');
 const authMiddleware = require('../middleware/authMiddleware');
 
+// In-memory queue to prevent crashing node and avoiding Razorpay rate limits (e.g. 15 concurrent max)
+const { default: PQueue } = require('p-queue');
+const paymentQueue = new PQueue({ concurrency: 15 });
+
 // Lazy-init Razorpay so server boots even when keys are empty
 let _razorpay = null;
 const getRazorpay = () => {
@@ -23,25 +27,34 @@ const getRazorpay = () => {
 
 // ── POST /api/payments/create-order (PUBLIC) ──────────────────────────────────
 router.post('/create-order', async (req, res) => {
+  console.log('[create-order] Incoming request body:', req.body);
   const { amount, restaurant_id } = req.body;
 
   if (!amount || !restaurant_id) {
+    console.error('[create-order] Missing fields - amount:', amount, 'restaurant_id:', restaurant_id);
     return res.status(400).json({ error: 'amount and restaurant_id are required' });
   }
 
   try {
     // Validate restaurant exists and get route account id
+    console.log('[create-order] Fetching restaurant ID:', restaurant_id);
     const { data: restaurant, error: rErr } = await supabase
       .from('restaurants')
       .select('id, name, razorpay_account_id')
       .eq('id', restaurant_id)
       .single();
 
+    if (rErr) console.error('[create-order] DB Query Error:', rErr);
+
     if (rErr || !restaurant) {
+      console.error('[create-order] Restaurant not found for ID:', restaurant_id);
       return res.status(404).json({ error: 'Restaurant not found' });
     }
 
+    console.log('[create-order] Restaurant found. data:', restaurant);
+
     if (!restaurant.razorpay_account_id) {
+      console.error('[create-order] Missing razorpay_account_id for restaurant:', restaurant.id);
       return res.status(400).json({ error: 'Restaurant has not configured a payment receiving account (Razorpay Route)' });
     }
 
@@ -66,7 +79,11 @@ router.post('/create-order', async (req, res) => {
       ]
     };
 
-    const rpOrder = await razorpay.orders.create(rpOrderOptions);
+    console.log('[create-order] Sending to Razorpay:', JSON.stringify(rpOrderOptions, null, 2));
+
+    // Place the outbound API request into the queue to avoid blowing up the event loop
+    const rpOrder = await paymentQueue.add(() => razorpay.orders.create(rpOrderOptions));
+    console.log('[create-order] Razorpay order created successfully:', rpOrder.id);
 
     res.json({
       razorpay_order_id: rpOrder.id,
@@ -74,11 +91,19 @@ router.post('/create-order', async (req, res) => {
       currency: rpOrder.currency,
     });
   } catch (err) {
-    console.error('Create Razorpay order error:', err.message || err);
+    console.error('[create-order] Create Razorpay order error caught:', err);
+    console.error('[create-order] Error message:', err.message);
+    if (err.error) console.error('[create-order] Razorpay inner error:', err.error);
+    
     if (err.message && err.message.includes('not configured')) {
       return res.status(503).json({ error: err.message });
     }
-    res.status(500).json({ error: 'Failed to create payment order' });
+    
+    const statusCode = err.statusCode || 500;
+    // Relay the razorpay error description if available so the frontend can display it
+    const errorDesc = err.error?.description || 'Failed to create payment order';
+    
+    res.status(statusCode).json({ error: errorDesc, details: err.error });
   }
 });
 

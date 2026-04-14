@@ -3,21 +3,19 @@ const router = express.Router();
 const supabase = require('../config/supabase');
 const authMiddleware = require('../middleware/authMiddleware');
 
-// ── Helper: today's token number ─────────────────────────────────────────────
+// ── Helper: today's token number (Atomic RPC logic) ────────────────────────
 async function getNextTokenNumber(restaurant_id) {
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-  const endOfDay   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  // Use atomic RPC function to prevent race conditions during high concurrency
+  const { data, error } = await supabase.rpc('get_next_token_number', {
+    p_restaurant_id: restaurant_id
+  });
 
-  const { count, error } = await supabase
-    .from('orders')
-    .select('id', { count: 'exact', head: true })
-    .eq('restaurant_id', restaurant_id)
-    .gte('created_at', startOfDay.toISOString())
-    .lte('created_at', endOfDay.toISOString());
-
-  if (error) return 1;
-  return (count || 0) + 1;
+  if (error) {
+    console.error('RPC get_next_token_number error:', error);
+    // Emergency fallback if RPC is not installed (prevents full crash)
+    return Math.floor(Math.random() * 10000);
+  }
+  return data;
 }
 
 // ── Helper: date range from query param ──────────────────────────────────────
