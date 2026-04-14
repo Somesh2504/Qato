@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, Leaf, Minus, Plus, Search } from 'lucide-react';
-import { Player } from '@lottiefiles/react-lottie-player';
 import toast from 'react-hot-toast';
 
 import { getSupabaseClient } from '../../lib/supabaseClient';
@@ -15,9 +14,7 @@ import SkeletonCard from '../../components/ui/SkeletonCard';
 import Button from '../../components/ui/Button';
 
 import { useSeoForCustomer } from '../../hooks/useSeoForCustomer';
-import { useAddToHomeScreenPrompt } from '../../hooks/useAddToHomeScreenPrompt';
 import { useSupabaseChannelReconnect } from '../../hooks/useSupabaseChannelReconnect';
-import foodChoiceAnimation from '../../../Food Choice.json';
 
 export default function MenuPage() {
   const { slug } = useParams();
@@ -47,10 +44,6 @@ export default function MenuPage() {
       return null;
     }
   }, []);
-
-  const { promptOpen, setPromptOpen, trigger: triggerInstall } = useAddToHomeScreenPrompt({
-    showDelayMs: 30000,
-  });
 
   const isReconnecting = useSupabaseChannelReconnect({
     enabled: Boolean(supabase && restaurant?.id),
@@ -242,25 +235,14 @@ export default function MenuPage() {
       <div ref={headerRef} className="sticky top-0 z-20 bg-white shadow-sm">
         {!loading && restaurant && (
           <div className="bg-gradient-to-r from-[#1A1A2E] to-[#16213E] px-4 pt-5 pb-4">
-            <div className="flex items-end gap-2">
+            <div className="flex items-start gap-2">
               <h1
                 className="text-xl font-bold text-white leading-tight truncate flex-[1.2] min-w-0"
                 title={restaurant.name}
               >
                 {restaurant.name}
               </h1>
-              <div className="flex items-end gap-2 flex-1 min-w-0">
-                <div className="self-end w-full h-[56px] mr-2">
-                  <Player
-                    autoplay
-                    loop
-                    src={foodChoiceAnimation}
-                    className="w-full h-full"
-                    style={{ height: '100%' }}
-                  />
-                </div>
-              </div>
-              <div className="flex items-end flex-shrink-0">
+              <div className="flex items-start flex-shrink-0">
                 {hasSessionOrders && (
                   <button
                     onClick={() => {
@@ -273,7 +255,7 @@ export default function MenuPage() {
                         }
                       } catch {}
                     }}
-                    className="text-white text-[10px] font-extrabold w-12 h-12 bg-[#FF6B35] rounded-xl hover:bg-[#E55A24] transition-all shadow-md shadow-black/20 tracking-wide flex items-center justify-center text-center leading-[1.1]"
+                    className="text-white text-[10px] font-extrabold px-2 h-11 bg-[#FF6B35] rounded-xl hover:bg-[#E55A24] transition-all shadow-md shadow-black/20 tracking-wide flex items-center justify-center text-center leading-[1.1]"
                   >
                     Your Orders
                   </button>
@@ -551,24 +533,6 @@ export default function MenuPage() {
               </Button>
             </>
           )}
-        </div>
-      </BottomSheet>
-
-      <BottomSheet
-        isOpen={promptOpen}
-        onClose={() => setPromptOpen(false)}
-        title="Install QRAVE"
-        maxHeight="60vh"
-        showHandle={false}
-      >
-        <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-600">Add QRAVE to your home screen for faster ordering.</p>
-          <Button variant="primary" fullWidth onClick={triggerInstall} className="min-h-[44px]">
-            Add to Home Screen
-          </Button>
-          <Button variant="outline" fullWidth onClick={() => setPromptOpen(false)} className="min-h-[44px]">
-            Not now
-          </Button>
         </div>
       </BottomSheet>
     </div>

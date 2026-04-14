@@ -5,6 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Zap, ArrowRight, ChevronRight } from 'lucide-react';
 import { Player } from '@lottiefiles/react-lottie-player';
 import scanToOrderAnimation from '../assets/scan-to-order.json';
+import BottomSheet from '../components/ui/BottomSheet';
+import Button from '../components/ui/Button';
 import './LandingPage.css';
 
 const FOOD_EMOJIS = ['🍕', '🍔', '🍜', '🥘', '🍛', '🍣', '🥗', '🍰', '🧁', '🍩', '🥐', '🌮'];
@@ -81,7 +83,55 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [installSheetOpen, setInstallSheetOpen] = useState(false);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+  const [nativeInstallSupported, setNativeInstallSupported] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isAppleDevice, setIsAppleDevice] = useState(false);
   const sectionsRef = useRef([]);
+
+  useEffect(() => {
+    const ua = window.navigator.userAgent || '';
+    const appleByUA = /iphone|ipad|ipod/i.test(ua);
+    const touchMac = window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1;
+    setIsAppleDevice(appleByUA || touchMac);
+
+    const standalone =
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      window.navigator.standalone === true;
+    setIsStandalone(standalone);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+      setNativeInstallSupported(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  useEffect(() => {
+    if (isStandalone) return;
+    const t = window.setTimeout(() => setInstallSheetOpen(true), 900);
+    return () => window.clearTimeout(t);
+  }, [isStandalone]);
+
+  const handleInstallClick = async () => {
+    if (!deferredInstallPrompt) return;
+    try {
+      await deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+    } catch {
+      // ignore
+    } finally {
+      setDeferredInstallPrompt(null);
+      setNativeInstallSupported(false);
+      setInstallSheetOpen(false);
+    }
+  };
 
   // Track scroll for navbar styling
   useEffect(() => {
@@ -545,6 +595,44 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <BottomSheet
+        isOpen={installSheetOpen && !isStandalone}
+        onClose={() => setInstallSheetOpen(false)}
+        title="Install QRAVE App"
+        maxHeight="70vh"
+        showHandle={false}
+      >
+        <div className="p-4 space-y-3">
+          <p className="text-sm text-gray-700">
+            Install QRAVE on your device for a faster app-like experience.
+          </p>
+
+          {nativeInstallSupported ? (
+            <Button variant="primary" fullWidth onClick={handleInstallClick} className="min-h-[44px]">
+              Download App
+            </Button>
+          ) : (
+            <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-1.5">
+              {isAppleDevice ? (
+                <>
+                  <p className="font-semibold text-gray-700">On iPhone or iPad:</p>
+                  <p>Open in Safari, tap Share, then tap Add to Home Screen.</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-gray-700">Install from your browser menu:</p>
+                  <p>Look for Install App or Add to Home Screen in browser options.</p>
+                </>
+              )}
+            </div>
+          )}
+
+          <Button variant="outline" fullWidth onClick={() => setInstallSheetOpen(false)} className="min-h-[44px]">
+            Not now
+          </Button>
+        </div>
+      </BottomSheet>
 
       {/* ── Scroll Animation Trigger (inline style tag for in-view) ── */}
       <style>{`
