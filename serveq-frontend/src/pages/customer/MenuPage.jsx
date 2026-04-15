@@ -15,6 +15,7 @@ import Button from '../../components/ui/Button';
 
 import { useSeoForCustomer } from '../../hooks/useSeoForCustomer';
 import { useSupabaseChannelReconnect } from '../../hooks/useSupabaseChannelReconnect';
+import { readSessionOrders } from '../../utils/sessionOrders';
 
 export default function MenuPage() {
   const { slug } = useParams();
@@ -144,8 +145,7 @@ export default function MenuPage() {
   useEffect(() => {
     try {
       if (restaurant?.id) {
-        const history = JSON.parse(localStorage.getItem('qato_session_orders') || '[]');
-        const restOrders = history.filter(o => o.restaurant_id === restaurant.id);
+        const restOrders = readSessionOrders(restaurant.id);
         setHasSessionOrders(restOrders.length > 0);
       }
     } catch {}
@@ -247,8 +247,7 @@ export default function MenuPage() {
                   <button
                     onClick={() => {
                       try {
-                        const history = JSON.parse(localStorage.getItem('qato_session_orders') || '[]');
-                        const restOrders = history.filter(o => o.restaurant_id === restaurant?.id);
+                        const restOrders = readSessionOrders(restaurant?.id);
                         if (restOrders.length > 0) {
                           const active = restOrders.sort((a,b) => new Date(b.created_at) - new Date(a.created_at))[0];
                           navigate(`/order/${active.id}`);

@@ -37,18 +37,17 @@ export default function PaymentResultPage() {
     if (!orderId) return;
 
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          navigate(`/order/${orderId}`, { replace: true });
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [orderId, navigate]);
+  }, [orderId]);
+
+  useEffect(() => {
+    if (!orderId) return;
+    if (countdown !== 0) return;
+    navigate(`/order/${orderId}`, { replace: true });
+  }, [countdown, orderId, navigate]);
 
   const handleGoToOrder = () => {
     if (orderId) {

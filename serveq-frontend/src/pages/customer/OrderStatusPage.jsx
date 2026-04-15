@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import SkeletonCard from '../../components/ui/SkeletonCard';
 import { useSeoForCustomer } from '../../hooks/useSeoForCustomer';
 import { useNotificationSound } from '../../hooks/useNotificationSound';
+import { mergeSessionOrder, writeSessionOrders } from '../../utils/sessionOrders';
 
 export default function OrderStatusPage() {
   const { orderId } = useParams();
@@ -72,6 +73,7 @@ export default function OrderStatusPage() {
   // Notification sounds — track previous states to fire sounds only once when state changes
   const prevQueueAheadRef = useRef(0);
   const soundFiredForReadyRef = useRef(false);
+  const soundFiredForTurnRef = useRef(false);
   const soundFiredForDoneRef = useRef(false);
 
   // Rating UI
@@ -85,7 +87,7 @@ export default function OrderStatusPage() {
     const map = {
       pending: {
         emoji: '🟡',
-        label: 'Order Received',
+        label: 'YOUR FOOD IS ON ITS WAY',
         bg: 'bg-yellow-50',
         text: 'text-yellow-800',
         border: 'border-yellow-200',
@@ -143,15 +145,38 @@ export default function OrderStatusPage() {
     const { restaurantId, createdAt } = queueBaseRef.current;
     if (!restaurantId || !createdAt) return;
 
-    const { count, error: countError } = await supabase
+    const startOfDay = new Date(createdAt);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(createdAt);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const { count: activeCount, error: activeCountError } = await supabase
       .from('orders')
       .select('id', { count: 'exact', head: true })
       .eq('restaurant_id', restaurantId)
       .in('status', ['pending', 'preparing'])
+      .gte('created_at', startOfDay.toISOString())
+      .lte('created_at', endOfDay.toISOString())
       .lt('created_at', createdAt);
 
-    if (countError) return;
-    setQueueAhead(count || 0);
+    if (activeCountError) return;
+
+    // Keep customer count consistent with admin queue by excluding unpaid UPI placeholders.
+    const { count: unpaidUpiCount, error: unpaidUpiError } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('restaurant_id', restaurantId)
+      .in('status', ['pending', 'preparing'])
+      .eq('payment_type', 'upi')
+      .neq('payment_status', 'paid')
+      .gte('created_at', startOfDay.toISOString())
+      .lte('created_at', endOfDay.toISOString())
+      .lt('created_at', createdAt);
+
+    if (unpaidUpiError) return;
+
+    const queueCount = Math.max(0, (activeCount || 0) - (unpaidUpiCount || 0));
+    setQueueAhead(queueCount);
   };
 
   const fetchOrderDetails = async () => {
@@ -188,25 +213,15 @@ export default function OrderStatusPage() {
 
       // Save order to session history for multi-order tracking
       try {
-        const HISTORY_KEY = 'qato_session_orders';
-        const existing = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-        const alreadyExists = existing.some((o) => o.id === orderData.id);
-        if (!alreadyExists) {
-          existing.push({
-            id: orderData.id,
-            token_number: orderData.token_number,
-            created_at: orderData.created_at,
-            status: orderData.status,
-            total_amount: orderData.total_amount,
-            restaurant_id: orderData.restaurant_id,
-            restaurant_slug: restData?.slug || null,
-          });
-          localStorage.setItem(HISTORY_KEY, JSON.stringify(existing));
-        }
-        // Load all session orders for this restaurant
-        const restOrders = existing
-          .filter((o) => o.restaurant_id === orderData.restaurant_id)
-          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const restOrders = mergeSessionOrder(orderData.restaurant_id, {
+          id: orderData.id,
+          token_number: orderData.token_number,
+          created_at: orderData.created_at,
+          status: orderData.status,
+          total_amount: orderData.total_amount,
+          restaurant_id: orderData.restaurant_id,
+          restaurant_slug: restData?.slug || null,
+        }, new Date(orderData.created_at)).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         setSessionOrders(restOrders);
       } catch {
         // ignore localStorage errors
@@ -283,12 +298,15 @@ export default function OrderStatusPage() {
 
             // Update session order status in localStorage
             try {
-              const HISTORY_KEY = 'qato_session_orders';
-              const existing = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-              const updatedOrders = existing.map((o) =>
-                o.id === updated.id ? { ...o, status: nextStatus } : o
-              );
-              localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedOrders));
+              const updatedOrders = mergeSessionOrder(updated.restaurant_id, {
+                id: updated.id,
+                token_number: updated.token_number,
+                created_at: updated.created_at,
+                status: nextStatus,
+                total_amount: updated.total_amount,
+                restaurant_id: updated.restaurant_id,
+                restaurant_slug: restaurant?.slug || null,
+              }, new Date(updated.created_at));
               setSessionOrders((prev) =>
                 prev.map((o) => (o.id === updated.id ? { ...o, status: nextStatus } : o))
               );
@@ -347,7 +365,7 @@ export default function OrderStatusPage() {
                 o.id === payload.new.id ? { ...o, status: payload.new.status } : o
               );
               try {
-                localStorage.setItem('qato_session_orders', JSON.stringify(updatedOrders));
+                writeSessionOrders(restaurantId, updatedOrders, new Date(payload.new.created_at));
               } catch {
                 // ignore
               }
@@ -388,15 +406,31 @@ export default function OrderStatusPage() {
     };
   }, [order?.status, supabase]);
 
-  // Monitor queue changes and play sound when customer is next (queueAhead === 1)
+  // Monitor queue changes and play sound at key moments:
+  // 1) one order ahead, 2) customer's turn (0 ahead / preparing).
   useEffect(() => {
-    if (queueAhead === 1 && prevQueueAheadRef.current !== 1 && !soundFiredForReadyRef.current) {
+    const prevQueueAhead = prevQueueAheadRef.current;
+
+    if (queueAhead === 1 && prevQueueAhead !== 1 && !soundFiredForReadyRef.current) {
       soundFiredForReadyRef.current = true;
       playSound();
       toast.success('⏭️ You\'re next! Order is being prepared.', { duration: 4000 });
     }
+
+    const isActiveCurrentOrder = order?.status === 'pending' || order?.status === 'preparing';
+    if (
+      queueAhead === 0 &&
+      prevQueueAhead > 0 &&
+      isActiveCurrentOrder &&
+      !soundFiredForTurnRef.current
+    ) {
+      soundFiredForTurnRef.current = true;
+      playSound();
+      toast.success('🍽️ It\'s your turn now! Your order is up next.', { duration: 4500 });
+    }
+
     prevQueueAheadRef.current = queueAhead;
-  }, [queueAhead, playSound]);
+  }, [queueAhead, order?.status, playSound]);
 
   const statusPillKey = useMemo(() => `${order?.status || 'pending'}:${statusAnimKey}`, [order?.status, statusAnimKey]);
 
