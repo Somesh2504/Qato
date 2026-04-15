@@ -14,6 +14,7 @@ const EMPTY_FORM = {
   description: '',
   price: '',
   is_veg: true,
+  is_available: true,
   category_id: '',
   photo_url: '',
   prep_time_minutes: '',
@@ -24,6 +25,7 @@ export default function MenuManagementPage() {
   const supabaseRef = useRef(null);
   const fileInputRef = useRef(null);
   const longPressRef = useRef(null);
+  const loadDataRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
@@ -58,6 +60,11 @@ export default function MenuManagementPage() {
     if (!selectedCategoryId && nextCats.length) setSelectedCategoryId(nextCats[0].id);
   };
 
+  // Keep loadDataRef always pointing to the latest loadData
+  useEffect(() => {
+    loadDataRef.current = loadData;
+  });
+
   useEffect(() => {
     try {
       supabaseRef.current = getSupabaseClient();
@@ -72,11 +79,11 @@ export default function MenuManagementPage() {
     if (!restaurantId || !supabaseRef.current) return;
     const catChannel = supabaseRef.current
       .channel(`menu-cat:${restaurantId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categories', filter: `restaurant_id=eq.${restaurantId}` }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categories', filter: `restaurant_id=eq.${restaurantId}` }, () => loadDataRef.current?.())
       .subscribe();
     const itemChannel = supabaseRef.current
       .channel(`menu-item:${restaurantId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items', filter: `restaurant_id=eq.${restaurantId}` }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items', filter: `restaurant_id=eq.${restaurantId}` }, () => loadDataRef.current?.())
       .subscribe();
     return () => {
       supabaseRef.current?.removeChannel(catChannel);
@@ -208,12 +215,19 @@ export default function MenuManagementPage() {
   };
 
   const toggleAvailability = async (item) => {
+    const newAvailability = !item.is_available;
+    // Optimistic local update so the toggle reflects immediately
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, is_available: newAvailability } : i)));
     const { error } = await supabaseRef.current
       .from('menu_items')
-      .update({ is_available: !item.is_available })
+      .update({ is_available: newAvailability })
       .eq('id', item.id)
       .eq('restaurant_id', restaurantId);
-    if (error) toast.error('Failed to update availability');
+    if (error) {
+      // Rollback on failure
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, is_available: item.is_available } : i)));
+      toast.error('Failed to update availability');
+    }
   };
 
   const uploadPhoto = async (file) => {

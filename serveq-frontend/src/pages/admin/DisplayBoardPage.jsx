@@ -158,9 +158,17 @@ export default function DisplayBoardPage() {
                   
                   <div className="flex-1 flex flex-col justify-center gap-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs md:text-sm uppercase tracking-[0.16em] font-semibold text-white/60">Queue #{index + 1}</p>
-                      <span className="text-xs md:text-sm font-semibold rounded-full px-3 py-1 bg-white/10 text-white/90 capitalize">
-                        {order.status.replace(/_/g, ' ')}
+                        <p className="text-xs md:text-sm uppercase tracking-[0.16em] font-semibold text-white/60">Queue #{index + 1}</p>
+                      <span className={`text-xs md:text-sm font-bold rounded-full px-3 py-1 capitalize ${
+                        order.status === 'preparing' ? 'bg-blue-500/20 text-blue-400' :
+                        order.status === 'done' ? 'bg-green-500/20 text-green-400' :
+                        order.status === 'cancellation_requested' ? 'bg-red-500/20 text-red-400' :
+                        'bg-white/10 text-white/90'
+                      }`}>
+                        {order.status === 'pending' ? 'Received' :
+                         order.status === 'preparing' ? 'Preparing' :
+                         order.status === 'done' ? 'Ready' :
+                         order.status === 'cancellation_requested' ? 'Cancel Requested' : order.status}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

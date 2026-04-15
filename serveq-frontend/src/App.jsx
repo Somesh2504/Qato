@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from './context/AuthContext';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -52,6 +53,10 @@ export default function App() {
 
   return (
     <>
+      <Helmet>
+        <title>ServeQ - Smart Restaurant Ordering</title>
+        <meta name="description" content="ServeQ streamlines restaurant ordering and queue management." />
+      </Helmet>
       {!isOnline ? <OfflineBanner onRetry={() => window.location.reload()} /> : null}
       <Suspense fallback={<LoadingSpinner fullScreen text="Loading..." />}>
         <Routes>

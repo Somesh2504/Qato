@@ -159,6 +159,8 @@ export default function OrderQueuePage() {
 
   const setOrderStatus = async (orderId, status) => {
     setSavingStatusIds((prev) => ({ ...prev, [orderId]: true }));
+    // Optimistic local update so UI reflects immediately
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
     try {
       const { error } = await supabaseRef.current
         .from('orders')
@@ -166,8 +168,10 @@ export default function OrderQueuePage() {
         .eq('id', orderId)
         .eq('restaurant_id', restaurantId);
       if (error) throw error;
-      toast.success(`Order marked as ${status}`);
+      toast.success(`Order marked as ${status === 'preparing' ? 'started preparing' : status}`);
     } catch {
+      // Rollback optimistic update on failure
+      await fetchOrders();
       toast.error('Unable to update status');
     } finally {
       setSavingStatusIds((prev) => ({ ...prev, [orderId]: false }));
@@ -482,6 +486,13 @@ export default function OrderQueuePage() {
             >
               Start Preparing
             </Button>
+          )}
+
+          {(!allItemsDone && order.status === 'preparing') && (
+            <span className="inline-flex items-center min-h-11 px-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-sm font-semibold gap-2 animate-pulse">
+              <Loader2 size={14} className="animate-spin" />
+              Started Preparing
+            </span>
           )}
 
           {((order.status === 'preparing' || allItemsDone) && order.status !== 'done') && (

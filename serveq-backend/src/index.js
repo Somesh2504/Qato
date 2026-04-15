@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const morgan = require('morgan');
 
 const authRoutes = require('./routes/auth');
 const restaurantRoutes = require('./routes/restaurant');
@@ -15,8 +17,23 @@ const PORT = process.env.PORT || 5000;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.set('trust proxy', 1); // Required for rate limiting behind reverse proxies like Render
-app.use(cors({ origin: '*' }));
+app.use(helmet());
+
+const allowedOrigins = ['https://qravee.me', 'https://www.qravee.me', 'http://localhost:5173'];
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+
 app.use(express.json());
+
+// Log only errors using morgan
+app.use(morgan('dev', { skip: (req, res) => res.statusCode < 400 }));
 
 // ── Rate Limiting ────────────────────────────────────────────────────────────
 const apiLimiter = rateLimit({

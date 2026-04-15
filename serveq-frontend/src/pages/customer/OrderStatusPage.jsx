@@ -85,7 +85,7 @@ export default function OrderStatusPage() {
     const map = {
       pending: {
         emoji: '🟡',
-        label: 'Preparing Your Order',
+        label: 'Order Received',
         bg: 'bg-yellow-50',
         text: 'text-yellow-800',
         border: 'border-yellow-200',
@@ -94,7 +94,7 @@ export default function OrderStatusPage() {
       },
       preparing: {
         emoji: '🔵',
-        label: 'Preparing Your Order',
+        label: 'Your Order is Being Prepared',
         bg: 'bg-blue-50',
         text: 'text-blue-800',
         border: 'border-blue-200',
