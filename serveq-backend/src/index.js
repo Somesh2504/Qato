@@ -19,7 +19,12 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1); // Required for rate limiting behind reverse proxies like Render
 app.use(helmet());
 
-const allowedOrigins = ['https://qravee.me', 'https://www.qravee.me', 'http://localhost:5173'];
+const allowedOrigins = [
+  'https://qravee.me',
+  'https://www.qravee.me',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {

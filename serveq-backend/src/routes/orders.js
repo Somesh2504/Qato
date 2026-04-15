@@ -121,11 +121,14 @@ router.get('/:orderId', async (req, res) => {
   if (error || !order) return res.status(404).json({ error: 'Order not found' });
 
   // Count orders ahead (same restaurant, active, placed before this one)
+  const { start, end } = todayRange();
   const { count: ordersAhead } = await supabase
     .from('orders')
     .select('id', { count: 'exact', head: true })
     .eq('restaurant_id', order.restaurant_id)
     .in('status', ['pending', 'preparing'])
+    .gte('created_at', start)
+    .lte('created_at', end)
     .lt('created_at', order.created_at);
 
   res.json({
