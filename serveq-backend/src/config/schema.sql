@@ -99,7 +99,14 @@ CREATE TABLE IF NOT EXISTS ratings (
   created_at    TIMESTAMPTZ DEFAULT now()
 );
 
--- ── 7. transactions ──────────────────────────────────────────────────────────
+-- ── 7. superadmins ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS superadmins (
+  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  email      TEXT        UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- ── 8. transactions ──────────────────────────────────────────────────────────
 -- Payment audit trail to track paid/failed/refunded entries from Razorpay.
 CREATE TABLE IF NOT EXISTS transactions (
   id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -122,9 +129,222 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at         ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_menu_items_restaurant_id  ON menu_items(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_menu_items_category_id    ON menu_items(category_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_restaurant_id     ON ratings(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_superadmins_email          ON superadmins(email);
 CREATE INDEX IF NOT EXISTS idx_transactions_order_id      ON transactions(order_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_restaurant_id ON transactions(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at    ON transactions(created_at);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_transactions_payment_id
   ON transactions(razorpay_payment_id)
   WHERE razorpay_payment_id IS NOT NULL;
+
+-- ── Row Level Security (RLS) ─────────────────────────────────────────────────
+-- IMPORTANT:
+-- This policy set is "compatibility mode" for your current architecture where
+-- customer flow uses Supabase directly from the frontend.
+-- For stricter security, move customer order write/read to backend-only endpoints.
+
+CREATE OR REPLACE FUNCTION public.is_superadmin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.superadmins sa
+    WHERE lower(sa.email) = lower(auth.email())
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_restaurant_owner(p_restaurant_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.restaurants r
+    WHERE r.id = p_restaurant_id
+      AND lower(r.owner_email) = lower(auth.email())
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_superadmin() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_restaurant_owner(UUID) TO anon, authenticated;
+
+ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ratings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE superadmins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
+-- Re-runnable policy cleanup
+DROP POLICY IF EXISTS restaurants_public_read ON restaurants;
+DROP POLICY IF EXISTS restaurants_owner_manage ON restaurants;
+
+DROP POLICY IF EXISTS menu_categories_public_read ON menu_categories;
+DROP POLICY IF EXISTS menu_categories_owner_manage ON menu_categories;
+
+DROP POLICY IF EXISTS menu_items_public_read ON menu_items;
+DROP POLICY IF EXISTS menu_items_owner_manage ON menu_items;
+
+DROP POLICY IF EXISTS orders_public_read ON orders;
+DROP POLICY IF EXISTS orders_public_insert ON orders;
+DROP POLICY IF EXISTS orders_owner_manage ON orders;
+DROP POLICY IF EXISTS orders_public_cancel_request ON orders;
+
+DROP POLICY IF EXISTS order_items_public_read ON order_items;
+DROP POLICY IF EXISTS order_items_public_insert ON order_items;
+DROP POLICY IF EXISTS order_items_owner_manage ON order_items;
+
+DROP POLICY IF EXISTS ratings_public_insert ON ratings;
+DROP POLICY IF EXISTS ratings_owner_read ON ratings;
+
+DROP POLICY IF EXISTS superadmins_self_read ON superadmins;
+DROP POLICY IF EXISTS superadmins_admin_manage ON superadmins;
+
+DROP POLICY IF EXISTS transactions_public_insert ON transactions;
+DROP POLICY IF EXISTS transactions_owner_read ON transactions;
+
+-- restaurants
+CREATE POLICY restaurants_public_read
+ON restaurants
+FOR SELECT
+USING (true);
+
+CREATE POLICY restaurants_owner_manage
+ON restaurants
+FOR ALL
+TO authenticated
+USING (public.is_superadmin() OR lower(owner_email) = lower(auth.email()))
+WITH CHECK (public.is_superadmin() OR lower(owner_email) = lower(auth.email()));
+
+-- menu_categories
+CREATE POLICY menu_categories_public_read
+ON menu_categories
+FOR SELECT
+USING (true);
+
+CREATE POLICY menu_categories_owner_manage
+ON menu_categories
+FOR ALL
+TO authenticated
+USING (public.is_superadmin() OR public.is_restaurant_owner(restaurant_id))
+WITH CHECK (public.is_superadmin() OR public.is_restaurant_owner(restaurant_id));
+
+-- menu_items
+CREATE POLICY menu_items_public_read
+ON menu_items
+FOR SELECT
+USING (true);
+
+CREATE POLICY menu_items_owner_manage
+ON menu_items
+FOR ALL
+TO authenticated
+USING (public.is_superadmin() OR public.is_restaurant_owner(restaurant_id))
+WITH CHECK (public.is_superadmin() OR public.is_restaurant_owner(restaurant_id));
+
+-- orders (compatibility mode for customer tracking + placement)
+CREATE POLICY orders_public_read
+ON orders
+FOR SELECT
+USING (true);
+
+CREATE POLICY orders_public_insert
+ON orders
+FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY orders_owner_manage
+ON orders
+FOR ALL
+TO authenticated
+USING (public.is_superadmin() OR public.is_restaurant_owner(restaurant_id))
+WITH CHECK (public.is_superadmin() OR public.is_restaurant_owner(restaurant_id));
+
+-- Allow customer cancellation request from public tracker page only
+CREATE POLICY orders_public_cancel_request
+ON orders
+FOR UPDATE
+TO anon, authenticated
+USING (status = 'pending')
+WITH CHECK (status = 'cancellation_requested');
+
+-- order_items (compatibility mode)
+CREATE POLICY order_items_public_read
+ON order_items
+FOR SELECT
+USING (true);
+
+CREATE POLICY order_items_public_insert
+ON order_items
+FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY order_items_owner_manage
+ON order_items
+FOR ALL
+TO authenticated
+USING (
+  public.is_superadmin()
+  OR EXISTS (
+    SELECT 1
+    FROM orders o
+    WHERE o.id = order_items.order_id
+      AND public.is_restaurant_owner(o.restaurant_id)
+  )
+)
+WITH CHECK (
+  public.is_superadmin()
+  OR EXISTS (
+    SELECT 1
+    FROM orders o
+    WHERE o.id = order_items.order_id
+      AND public.is_restaurant_owner(o.restaurant_id)
+  )
+);
+
+-- ratings
+CREATE POLICY ratings_public_insert
+ON ratings
+FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY ratings_owner_read
+ON ratings
+FOR SELECT
+TO authenticated
+USING (public.is_superadmin() OR public.is_restaurant_owner(restaurant_id));
+
+-- superadmins
+CREATE POLICY superadmins_self_read
+ON superadmins
+FOR SELECT
+TO authenticated
+USING (public.is_superadmin());
+
+CREATE POLICY superadmins_admin_manage
+ON superadmins
+FOR ALL
+TO authenticated
+USING (public.is_superadmin())
+WITH CHECK (public.is_superadmin());
+
+-- transactions
+CREATE POLICY transactions_public_insert
+ON transactions
+FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY transactions_owner_read
+ON transactions
+FOR SELECT
+TO authenticated
+USING (public.is_superadmin() OR public.is_restaurant_owner(restaurant_id));
