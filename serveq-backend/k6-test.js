@@ -1,67 +1,94 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-// 1. Array of different test restaurant IDs
-// Replace these with actual UUIDs of restaurants from your database.
-// You must grab actual restaurant IDs for the orders to insert successfully!
-const RESTAURANT_IDS = [
-  'restaurant-uuid-1',
-  'restaurant-uuid-2',
-  'restaurant-uuid-3'
-];
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:5000';
+const RESTAURANT_IDS = (__ENV.RESTAURANT_IDS || '')
+  .split(',')
+  .map((v) => v.trim())
+  .filter(Boolean);
+const ENABLE_PAYMENT = (__ENV.ENABLE_PAYMENT || '0') === '1';
+
+if (RESTAURANT_IDS.length === 0) {
+  throw new Error('Set RESTAURANT_IDS env var with comma-separated restaurant UUIDs before running k6.');
+}
 
 export const options = {
-  stages: [
-    { duration: '10s', target: 500 },  // Quick ramp up to 500
-    { duration: '30s', target: 5000 }, // Spike to 5000 concurrent users hitting Pay
-    { duration: '20s', target: 0 },    // Ramp down to cool off
-  ],
+  scenarios: {
+    customer_checkout_flow: {
+      executor: 'ramping-arrival-rate',
+      startRate: 5,
+      timeUnit: '1s',
+      preAllocatedVUs: 30,
+      maxVUs: 200,
+      stages: [
+        { target: 20, duration: '2m' },
+        { target: 50, duration: '5m' },
+        { target: 80, duration: '3m' },
+        { target: 0, duration: '1m' },
+      ],
+    },
+  },
+  thresholds: {
+    http_req_failed: ['rate<0.01'],
+    http_req_duration: ['p(95)<900', 'p(99)<1800'],
+    checks: ['rate>0.99'],
+  },
 };
 
-// Based on your index.js, your backend runs on Port 5000 locally
-const BASE_URL = 'http://localhost:5000'; 
+function pickRestaurantId() {
+  return RESTAURANT_IDS[Math.floor(Math.random() * RESTAURANT_IDS.length)];
+}
+
+function randomAmount() {
+  return Math.floor(Math.random() * 250) + 50; // 50 - 299 INR
+}
 
 export default function () {
-  // 2. Pick a random restaurant for this specific customer opening the menu
-  const randomRestaurantId = RESTAURANT_IDS[Math.floor(Math.random() * RESTAURANT_IDS.length)];
+  const restaurantId = pickRestaurantId();
 
-  // 3. Customer places their order in the DB
+  // Health check keeps baseline visibility for backend uptime during load.
+  const healthRes = http.get(`${BASE_URL}/api/health`);
+  check(healthRes, {
+    'health endpoint is reachable': (r) => r.status === 200,
+  });
+
+  const amount = randomAmount();
   const orderPayload = JSON.stringify({
-    restaurant_id: randomRestaurantId,
-    payment_type: 'online',
-    total_amount: 500,
+    restaurant_id: restaurantId,
+    payment_type: 'cash',
+    total_amount: amount,
     items: [
-      { menu_item_id: 'item_1', item_name: 'Margherita Pizza', item_price: 300, quantity: 1 },
-      { menu_item_id: 'item_2', item_name: 'Coke', item_price: 200, quantity: 1 }
-    ]
+      { item_name: 'Load Test Item A', item_price: amount, quantity: 1 },
+    ],
   });
 
   const orderRes = http.post(`${BASE_URL}/api/orders`, orderPayload, {
     headers: { 'Content-Type': 'application/json' },
   });
 
-  // Track if orders successfully insert (Expect 201)
-  check(orderRes, { 
-    'Order created locally in Supabase (201)': (r) => r.status === 201 
-  });
-  
-  // 4. Customer Hits "Pay" (Simulating reaching out to Razorpay Route)
-  const paymentPayload = JSON.stringify({
-    amount: 500,
-    restaurant_id: randomRestaurantId
+  check(orderRes, {
+    'order create status is 201': (r) => r.status === 201,
   });
 
-  const paymentRes = http.post(`${BASE_URL}/api/payments/create-order`, paymentPayload, {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  if (ENABLE_PAYMENT) {
+    const paymentPayload = JSON.stringify({
+      amount,
+      restaurant_id: restaurantId,
+    });
 
-  // Track what happens with Razorpay under load
-  check(paymentRes, { 
-    'Razorpay order created (200)': (r) => r.status === 200,
-    'Razorpay Rate Limited (429/503/400)': (r) => [429, 503, 400].includes(r.status),
-    'Server Crashed (5xx)': (r) => r.status >= 500 && r.status !== 503
-  });
+    const paymentRes = http.post(`${BASE_URL}/api/payments/create-order`, paymentPayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-idempotency-key': `${__VU}-${__ITER}-${restaurantId}`,
+      },
+    });
 
-  // Small sleep to mimic typical web network overhead before next action
-  sleep(Math.random() * 1.5);
+    check(paymentRes, {
+      'payment create order succeeds or is controlled failure': (r) =>
+        r.status === 200 || r.status === 400 || r.status === 429 || r.status === 503,
+      'payment create order avoids unexpected 5xx': (r) => r.status < 500 || r.status === 503,
+    });
+  }
+
+  sleep(Math.random() * 1.2);
 }

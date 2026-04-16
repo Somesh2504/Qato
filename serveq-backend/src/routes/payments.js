@@ -9,6 +9,45 @@ const authMiddleware = require('../middleware/authMiddleware');
 const { default: PQueue } = require('p-queue');
 const paymentQueue = new PQueue({ concurrency: 15 });
 
+// Lightweight idempotency cache for create-order retries (e.g. flaky network).
+const CREATE_ORDER_TTL_MS = 10 * 60 * 1000;
+const createOrderCache = new Map();
+
+function getCreateOrderCache(key) {
+  const entry = createOrderCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    createOrderCache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCreateOrderCache(key, value) {
+  createOrderCache.set(key, {
+    value,
+    expiresAt: Date.now() + CREATE_ORDER_TTL_MS,
+  });
+}
+
+async function upsertTransactionOnce(payload) {
+  const paymentId = payload.razorpay_payment_id;
+  if (!paymentId) {
+    await supabase.from('transactions').insert(payload).select();
+    return;
+  }
+
+  const { data: existing } = await supabase
+    .from('transactions')
+    .select('id')
+    .eq('razorpay_payment_id', paymentId)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing?.id) return;
+  await supabase.from('transactions').insert(payload).select();
+}
+
 // Lazy-init Razorpay so server boots even when keys are empty
 let _razorpay = null;
 const getRazorpay = () => {
@@ -29,10 +68,18 @@ const getRazorpay = () => {
 router.post('/create-order', async (req, res) => {
   console.log('[create-order] Incoming request body:', req.body);
   const { amount, restaurant_id } = req.body;
+  const idempotencyKey = req.headers['x-idempotency-key'];
 
   if (!amount || !restaurant_id) {
     console.error('[create-order] Missing fields - amount:', amount, 'restaurant_id:', restaurant_id);
     return res.status(400).json({ error: 'amount and restaurant_id are required' });
+  }
+
+  if (idempotencyKey) {
+    const cached = getCreateOrderCache(idempotencyKey);
+    if (cached) {
+      return res.json(cached);
+    }
   }
 
   try {
@@ -85,11 +132,17 @@ router.post('/create-order', async (req, res) => {
     const rpOrder = await paymentQueue.add(() => razorpay.orders.create(rpOrderOptions));
     console.log('[create-order] Razorpay order created successfully:', rpOrder.id);
 
-    res.json({
+    const responseBody = {
       razorpay_order_id: rpOrder.id,
       amount: rpOrder.amount,
       currency: rpOrder.currency,
-    });
+    };
+
+    if (idempotencyKey) {
+      setCreateOrderCache(idempotencyKey, responseBody);
+    }
+
+    res.json(responseBody);
   } catch (err) {
     console.error('[create-order] Create Razorpay order error caught:', err);
     console.error('[create-order] Error message:', err.message);
@@ -162,7 +215,7 @@ router.post('/verify', async (req, res) => {
 
     if (!signatureValid) {
       // Insert failed transaction
-      await supabase.from('transactions').insert({
+      await upsertTransactionOnce({
         order_id: orderData?.id || null,
         restaurant_id: orderData?.restaurant_id || null,
         razorpay_order_id,
@@ -172,9 +225,29 @@ router.post('/verify', async (req, res) => {
         status: 'failed',
         payment_method: 'upi',
         item_summary: itemSummary,
-      }).select();
+      });
 
       return res.json({ success: false, error: 'Payment signature mismatch' });
+    }
+
+    if (orderData?.payment_status === 'paid') {
+      const alreadySamePayment = orderData.razorpay_payment_id && orderData.razorpay_payment_id === razorpay_payment_id;
+      if (alreadySamePayment || !orderData.razorpay_payment_id) {
+        await upsertTransactionOnce({
+          order_id: orderData.id,
+          restaurant_id: orderData.restaurant_id,
+          razorpay_order_id,
+          razorpay_payment_id,
+          amount: orderData.total_amount || 0,
+          currency: 'INR',
+          status: 'paid',
+          payment_method: 'upi',
+          item_summary: itemSummary,
+        });
+        return res.json({ success: true, order_id: orderData.id, idempotent: true });
+      }
+
+      return res.status(409).json({ error: 'Order is already marked as paid with a different payment id' });
     }
 
     // Signature is valid — mark the order as paid
@@ -200,7 +273,7 @@ router.post('/verify', async (req, res) => {
     }
 
     // Insert successful transaction record
-    await supabase.from('transactions').insert({
+    await upsertTransactionOnce({
       order_id: orderData?.id || null,
       restaurant_id: orderData?.restaurant_id || null,
       razorpay_order_id,
@@ -210,7 +283,7 @@ router.post('/verify', async (req, res) => {
       status: 'paid',
       payment_method: 'upi',
       item_summary: itemSummary,
-    }).select();
+    });
 
     res.json({ success: true, order_id: orderData?.id || null });
   } catch (err) {

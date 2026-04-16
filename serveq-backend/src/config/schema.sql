@@ -99,6 +99,22 @@ CREATE TABLE IF NOT EXISTS ratings (
   created_at    TIMESTAMPTZ DEFAULT now()
 );
 
+-- ── 7. transactions ──────────────────────────────────────────────────────────
+-- Payment audit trail to track paid/failed/refunded entries from Razorpay.
+CREATE TABLE IF NOT EXISTS transactions (
+  id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id            UUID        REFERENCES orders(id) ON DELETE SET NULL,
+  restaurant_id       UUID        REFERENCES restaurants(id) ON DELETE SET NULL,
+  razorpay_order_id   TEXT,
+  razorpay_payment_id TEXT,
+  amount              NUMERIC     NOT NULL,
+  currency            TEXT        NOT NULL DEFAULT 'INR',
+  status              TEXT        NOT NULL,
+  payment_method      TEXT,
+  item_summary        JSONB,
+  created_at          TIMESTAMPTZ DEFAULT now()
+);
+
 -- ── Indexes for common queries ─────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_orders_restaurant_id      ON orders(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status             ON orders(status);
@@ -106,3 +122,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at         ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_menu_items_restaurant_id  ON menu_items(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_menu_items_category_id    ON menu_items(category_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_restaurant_id     ON ratings(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_order_id      ON transactions(order_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_restaurant_id ON transactions(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_created_at    ON transactions(created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_transactions_payment_id
+  ON transactions(razorpay_payment_id)
+  WHERE razorpay_payment_id IS NOT NULL;
