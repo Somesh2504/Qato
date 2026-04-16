@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getSupabaseClient } from '../lib/supabaseClient';
+import { getSuperadminMe } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -38,6 +39,7 @@ export function AuthProvider({ children }) {
 
         if (session?.access_token) {
           setToken(session.access_token);
+          localStorage.setItem(TOKEN_KEY, session.access_token);
         } else {
           setToken(null);
         }
@@ -52,16 +54,12 @@ export function AuthProvider({ children }) {
           setEmail(session.user.email);
         }
 
-        // Check superadmin status
+        // Check superadmin status via backend-enforced role endpoint
         const userEmail = session?.user?.email;
         if (userEmail) {
           try {
-            const { data: saRow } = await sb
-              .from('superadmins')
-              .select('id')
-              .eq('email', userEmail)
-              .maybeSingle();
-            setIsSuperadmin(Boolean(saRow));
+            await getSuperadminMe();
+            setIsSuperadmin(true);
           } catch { setIsSuperadmin(false); }
 
           // Fetch subscription info for the restaurant owner
@@ -94,12 +92,14 @@ export function AuthProvider({ children }) {
         setRestaurantName(null);
         setRestaurantSlug(null);
         setEmail(null);
+        setIsSuperadmin(false);
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(RESTAURANT_KEY);
         return;
       }
       if (nextToken) {
         localStorage.setItem(TOKEN_KEY, nextToken);
+        getSuperadminMe().then(() => setIsSuperadmin(true)).catch(() => setIsSuperadmin(false));
       }
       if (session.user?.email) {
         setEmail(session.user.email);
@@ -142,6 +142,7 @@ export function AuthProvider({ children }) {
       setRestaurantName(null);
       setRestaurantSlug(null);
       setEmail(null);
+      setIsSuperadmin(false);
 
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(RESTAURANT_KEY);

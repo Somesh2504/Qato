@@ -131,4 +131,20 @@ export const generateQRCode = (tableNumber) =>
 export const getQRCodes = () =>
   api.get('/qr');
 
+// ─── Superadmin ──────────────────────────────────────────
+export const getSuperadminMe = () =>
+  api.get('/superadmin/me');
+
+export const getSuperadminRestaurants = () =>
+  api.get('/superadmin/restaurants');
+
+export const getSuperadminAdmins = () =>
+  api.get('/superadmin/admins');
+
+export const addSuperadmin = (email) =>
+  api.post('/superadmin/admins', { email });
+
+export const removeSuperadmin = (id) =>
+  api.delete(`/superadmin/admins/${id}`);
+
 export default api;

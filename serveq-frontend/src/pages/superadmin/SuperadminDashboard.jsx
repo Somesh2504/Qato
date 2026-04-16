@@ -15,7 +15,12 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getSupabaseClient } from '../../lib/supabaseClient';
+import {
+  addSuperadmin,
+  getSuperadminAdmins,
+  getSuperadminRestaurants,
+  removeSuperadmin,
+} from '../../utils/api';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 
@@ -49,25 +54,20 @@ export default function SuperadminDashboard() {
   const [addingAdmin, setAddingAdmin] = useState(false);
   const [tab, setTab] = useState('restaurants'); // 'restaurants' | 'admins'
 
-  const supabase = useMemo(() => {
-    try { return getSupabaseClient(); } catch { return null; }
-  }, []);
-
   const fetchAll = useCallback(async () => {
-    if (!supabase) return;
     try {
       const [{ data: rData }, { data: aData }] = await Promise.all([
-        supabase.from('restaurants').select('*').order('created_at', { ascending: false }),
-        supabase.from('superadmins').select('*').order('created_at', { ascending: true }),
+        getSuperadminRestaurants(),
+        getSuperadminAdmins(),
       ]);
-      setRestaurants(rData || []);
-      setAdmins(aData || []);
+      setRestaurants(rData?.restaurants || []);
+      setAdmins(aData?.admins || []);
     } catch (err) {
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -90,8 +90,7 @@ export default function SuperadminDashboard() {
     }
     setAddingAdmin(true);
     try {
-      const { error } = await supabase.from('superadmins').insert({ email });
-      if (error) throw error;
+      await addSuperadmin(email);
       toast.success(`Added ${email} as superadmin`);
       setNewAdminEmail('');
       await fetchAll();
@@ -110,8 +109,7 @@ export default function SuperadminDashboard() {
     }
     if (!confirm(`Remove ${adminEmail} from superadmins?`)) return;
     try {
-      const { error } = await supabase.from('superadmins').delete().eq('id', adminId);
-      if (error) throw error;
+      await removeSuperadmin(adminId);
       toast.success(`Removed ${adminEmail}`);
       await fetchAll();
     } catch {

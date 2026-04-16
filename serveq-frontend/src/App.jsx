@@ -36,7 +36,9 @@ function Protected({ children }) {
 
 // Superadmin protected route wrapper — checks sessionStorage flag from /superadmin/login
 function SuperadminProtected({ children }) {
-  const isSuperadmin = sessionStorage.getItem('qato_superadmin') === 'true';
+  const { isLoading, isLoggedIn, isSuperadmin } = useAuth();
+  if (isLoading) return <LoadingSpinner fullScreen text="Loading…" />;
+  if (!isLoggedIn) return <Navigate to="/superadmin/login" replace />;
   if (!isSuperadmin) return <Navigate to="/superadmin/login" replace />;
   return children;
 }

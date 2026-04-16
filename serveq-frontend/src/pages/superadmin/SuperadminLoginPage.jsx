@@ -5,9 +5,7 @@ import { Crown, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { getSupabaseClient } from '../../lib/supabaseClient';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
-
-const ALLOWED_EMAIL = import.meta.env.VITE_SUPERADMIN_EMAIL;
-const ALLOWED_PASSWORD = import.meta.env.VITE_SUPERADMIN_PASSWORD;
+import { getSuperadminMe } from '../../utils/api';
 
 export default function SuperadminLoginPage() {
   const navigate = useNavigate();
@@ -26,13 +24,6 @@ export default function SuperadminLoginPage() {
       return setError('Email and password are required.');
     }
 
-    // ── GATE: Check against fixed env credentials ──
-    if (trimmedEmail !== ALLOWED_EMAIL?.toLowerCase() || password !== ALLOWED_PASSWORD) {
-      setError('Access denied. Invalid credentials.');
-      toast.error('Access denied.');
-      return;
-    }
-
     setLoading(true);
     try {
       // Sign in via Supabase Auth to get a session for database queries
@@ -46,13 +37,23 @@ export default function SuperadminLoginPage() {
         throw new Error('Auth failed. Make sure this email has a Supabase Auth account with the same password.');
       }
 
-      // Mark superadmin session
-      sessionStorage.setItem('qato_superadmin', 'true');
+      if (data?.session?.access_token) {
+        localStorage.setItem('serveq_token', data.session.access_token);
+      }
+
+      await getSuperadminMe();
 
       toast.success('Welcome, Superadmin!');
       navigate('/superadmin/dashboard');
 
     } catch (err) {
+      try {
+        const supabase = getSupabaseClient();
+        await supabase.auth.signOut();
+      } catch {
+        // ignore sign-out cleanup errors
+      }
+      localStorage.removeItem('serveq_token');
       setError(err?.message || 'Login failed');
       toast.error(err?.message || 'Login failed');
     } finally {
