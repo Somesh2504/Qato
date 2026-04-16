@@ -222,8 +222,15 @@ export default function CheckoutPage() {
     try {
       await ensureRazorpaySdk();
       const supabase = getSupabaseClient();
+      const paymentRequestId = (window.crypto && typeof window.crypto.randomUUID === 'function')
+        ? window.crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      const { data: edgeData } = await api.post('/payments/create-order', { amount: total, restaurant_id: restaurantId });
+      const { data: edgeData } = await api.post(
+        '/payments/create-order',
+        { amount: total, restaurant_id: restaurantId },
+        { headers: { 'x-idempotency-key': paymentRequestId } }
+      );
 
       if (!edgeData?.razorpay_order_id) {
         throw new Error('Could not create payment order');

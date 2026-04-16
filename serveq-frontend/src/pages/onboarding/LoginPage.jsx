@@ -22,6 +22,7 @@ function GoogleIcon() {
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const authCallbackUrl = import.meta.env.VITE_OAUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`;
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
@@ -92,7 +93,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `https://qato-1.onrender.com/auth/callback`,
+          redirectTo: authCallbackUrl,
           queryParams: {
             // Request offline access so refresh tokens work
             access_type: 'offline',

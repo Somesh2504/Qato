@@ -30,6 +30,7 @@ export default function SignupPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
+  const authCallbackUrl = import.meta.env.VITE_OAUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`;
   const svgWrapRef = useRef(null);
   const logoInputRef = useRef(null);
 
@@ -131,7 +132,7 @@ export default function SignupPage() {
       const { error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `https://qato-1.onrender.com/auth/callback`,
+          redirectTo: authCallbackUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'select_account',
@@ -163,7 +164,7 @@ export default function SignupPage() {
         email: trimmedEmail,
         password,
         options: {
-          emailRedirectTo: `https://qato-1.onrender.com/auth/callback`,
+          emailRedirectTo: authCallbackUrl,
         },
       });
       if (signUpError) {
