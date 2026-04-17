@@ -21,6 +21,8 @@ const getRazorpay = () => {
 };
 
 // ── Helper: Atomic token number via Supabase RPC ────────────────────────────
+// Uses a dedicated `token_counters` table with row-level locking (FOR UPDATE)
+// to guarantee unique, sequential token numbers even under concurrent load.
 async function getNextTokenNumber(restaurant_id) {
   const { data, error } = await supabase.rpc('get_next_token_number', {
     p_restaurant_id: restaurant_id
@@ -28,17 +30,9 @@ async function getNextTokenNumber(restaurant_id) {
 
   if (error) {
     console.error('RPC get_next_token_number error:', error);
-    // Emergency fallback: count today's orders + 1 (still server-side, not client)
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    const { count } = await supabase
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('restaurant_id', restaurant_id)
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString());
-    return (count || 0) + 1;
+    // DO NOT fallback to count-based logic — it causes duplicate tokens.
+    // Fail the order cleanly so the customer can retry.
+    throw new Error('Token generation failed. Please try again.');
   }
   return data;
 }
