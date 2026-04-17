@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, CheckCircle2, Circle, Loader2, UtensilsCrossed, Package } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
@@ -16,19 +16,16 @@ export default function CheckoutPage() {
   const [orderType, setOrderType] = useState('eat');
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [retryLabel, setRetryLabel] = useState('');
-  const retryActionRef = useRef(null);
 
   const subtotal = getTotal();
   const total = subtotal;
   const itemCount = getItemCount();
 
-  const orderItemsPayload = useMemo(
+  // Build the payload the secure backend expects: only IDs + quantities
+  const checkoutItems = useMemo(
     () =>
       items.map((item) => ({
         menu_item_id: item.id,
-        item_name: item.name,
-        item_price: item.price,
         quantity: item.quantity,
         customization_note: item.customizationNote || null,
       })),
@@ -55,103 +52,13 @@ export default function CheckoutPage() {
     fetchRestaurantName();
   }, [restaurantId, restaurantName]);
 
-  const setFailure = (message, retryFn, actionLabel) => {
-    // Requirement: never show raw error text to users.
-    const friendly = message ? 'Checkout failed. Please try again.' : 'Something went wrong. Please try again.';
+  const setFailure = (message) => {
+    const friendly = message || 'Something went wrong. Please try again.';
     setErrorMessage(friendly);
-    setRetryLabel(actionLabel);
-    retryActionRef.current = retryFn;
     toast.error(friendly);
   };
 
-  const getNextTokenNumber = async (supabase, restId) => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-
-    const { count, error } = await supabase
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('restaurant_id', restId)
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString());
-
-    if (error) throw new Error('Unable to generate token number');
-    return (count || 0) + 1;
-  };
-
-  const insertOrderAndItems = async ({
-    supabase,
-    restId,
-    tokenNumber,
-    paymentType,
-    paymentStatus,
-    orderTypeValue = 'eat',
-    razorpayOrderId = null,
-    razorpayPaymentId = null,
-  }) => {
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        restaurant_id: restId,
-        token_number: tokenNumber,
-        status: 'pending',
-        payment_type: paymentType,
-        payment_status: paymentStatus,
-        order_type: orderTypeValue,
-        total_amount: total,
-        razorpay_order_id: razorpayOrderId,
-        razorpay_payment_id: razorpayPaymentId,
-      })
-      .select()
-      .single();
-
-    if (orderError || !order) {
-      throw new Error(orderError?.message || 'Unable to create order');
-    }
-
-    const { error: itemsError } = await supabase.from('order_items').insert(
-      orderItemsPayload.map((item) => ({
-        ...item,
-        order_id: order.id,
-      }))
-    );
-
-    if (itemsError) {
-      await supabase.from('orders').delete().eq('id', order.id);
-      throw new Error(itemsError.message || 'Unable to save order items');
-    }
-
-    return order;
-  };
-
-  const openRazorpay = ({ razorpayOrderId, amountPaise }) =>
-    new Promise((resolve, reject) => {
-      if (!window.Razorpay) {
-        reject(new Error('Payment SDK failed to load'));
-        return;
-      }
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: amountPaise,
-        currency: 'INR',
-        name: restaurantLabel || 'QRAVE',
-        description: 'QRAVE Order Payment',
-        order_id: razorpayOrderId,
-        method: { upi: true, card: false, netbanking: false, wallet: false, emi: false },
-        theme: { color: '#FF6B35' },
-        handler: (response) => resolve(response),
-        modal: {
-          ondismiss: () => reject(new Error('Payment cancelled')),
-        },
-      };
-
-      const razorpay = new window.Razorpay(options);
-      razorpay.on('payment.failed', () => reject(new Error('Payment failed')));
-      razorpay.open();
-    });
-
+  // ── Razorpay SDK loader ─────────────────────────────────────────────────────
   const ensureRazorpaySdk = () =>
     new Promise((resolve, reject) => {
       if (window.Razorpay) {
@@ -173,24 +80,63 @@ export default function CheckoutPage() {
       document.body.appendChild(script);
     });
 
+  // ── Open Razorpay Checkout ──────────────────────────────────────────────────
+  const openRazorpay = ({ razorpayOrderId, amountPaise }) =>
+    new Promise((resolve, reject) => {
+      if (!window.Razorpay) {
+        reject(new Error('Payment SDK failed to load'));
+        return;
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: amountPaise,
+        currency: 'INR',
+        name: restaurantLabel || 'QRAVE',
+        description: 'QRAVE Order Payment',
+        order_id: razorpayOrderId,
+        // Prefill a dummy contact to skip the phone number prompt on new devices
+        prefill: {
+          contact: '9999999999',
+        },
+        method: { upi: true, card: false, netbanking: false, wallet: false, emi: false },
+        theme: { color: '#FF6B35' },
+        handler: (response) => resolve(response),
+        modal: {
+          ondismiss: () => reject(new Error('Payment cancelled')),
+        },
+        // NOTE: We intentionally do NOT reject on payment.failed.
+        // Razorpay allows the user to retry (e.g. wrong PIN → re-enter).
+        // Only reject when the user explicitly closes the modal (ondismiss above).
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  CASH ORDER — goes through secure backend
+  // ═══════════════════════════════════════════════════════════════════════════
   const handleCashOrder = async () => {
     if (!restaurantId) {
-      setFailure('Restaurant details missing. Please return to menu and try again.', handleCashOrder, 'Retry Place Order');
+      setFailure('Restaurant details missing. Please return to menu and try again.');
       return;
     }
     setErrorMessage('');
     setProcessing(true);
+
     try {
-      const supabase = getSupabaseClient();
-      const tokenNumber = await getNextTokenNumber(supabase, restaurantId);
-      const order = await insertOrderAndItems({
-        supabase,
-        restId: restaurantId,
-        tokenNumber,
-        paymentType: 'cash',
-        paymentStatus: 'pending',
-        orderTypeValue: orderType,
+      const { data } = await api.post('/orders/checkout', {
+        restaurant_id: restaurantId,
+        payment_type: 'cash',
+        order_type: orderType,
+        items: checkoutItems,
       });
+
+      if (!data?.orderId) {
+        throw new Error('Server did not return an order ID');
+      }
+
       clearCart();
       toast.success('Order placed successfully');
       try {
@@ -198,72 +144,67 @@ export default function CheckoutPage() {
       } catch {
         // ignore storage errors
       }
-      navigate(`/payment-result?status=success&orderId=${order.id}`, { replace: true });
+      navigate(`/payment-result?status=success&orderId=${data.orderId}`, { replace: true });
     } catch (error) {
-      setFailure(error.message || 'Could not place cash order', handleCashOrder, 'Retry Place Order');
+      const backendMsg = error.response?.data?.error;
+      setFailure(backendMsg || 'Could not place cash order. Please try again.');
     } finally {
       setProcessing(false);
     }
   };
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  UPI PAYMENT — secure backend creates order + Razorpay link
+  // ═══════════════════════════════════════════════════════════════════════════
   const handleUpiPayment = async () => {
     if (!restaurantId) {
-      setFailure('Restaurant details missing. Please return to menu and try again.', handleUpiPayment, 'Retry Payment');
+      setFailure('Restaurant details missing. Please return to menu and try again.');
       return;
     }
     if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
-      setFailure('Razorpay key missing in environment.', handleUpiPayment, 'Retry Payment');
+      setFailure('Payment configuration missing. Please contact support.');
       return;
     }
 
     setErrorMessage('');
     setProcessing(true);
-    let provisionalOrderId = null;
+
+    let orderId = null;
+
     try {
+      // 1. Load SDK
       await ensureRazorpaySdk();
-      const supabase = getSupabaseClient();
-      const paymentRequestId = (window.crypto && typeof window.crypto.randomUUID === 'function')
-        ? window.crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      const { data: edgeData } = await api.post(
-        '/payments/create-order',
-        { amount: total, restaurant_id: restaurantId },
-        { headers: { 'x-idempotency-key': paymentRequestId } }
-      );
+      // 2. Hit secure backend — server validates prices, creates order, creates Razorpay order
+      const { data: checkoutData } = await api.post('/orders/checkout', {
+        restaurant_id: restaurantId,
+        payment_type: 'upi',
+        order_type: orderType,
+        items: checkoutItems,
+      });
 
-      if (!edgeData?.razorpay_order_id) {
+      if (!checkoutData?.razorpay_order_id || !checkoutData?.orderId) {
         throw new Error('Could not create payment order');
       }
 
-      const tokenNumber = await getNextTokenNumber(supabase, restaurantId);
-      const provisionalOrder = await insertOrderAndItems({
-        supabase,
-        restId: restaurantId,
-        tokenNumber,
-        paymentType: 'upi',
-        paymentStatus: 'pending',
-        orderTypeValue: orderType,
-        razorpayOrderId: edgeData.razorpay_order_id,
-      });
-      provisionalOrderId = provisionalOrder.id;
+      orderId = checkoutData.orderId;
 
+      // 3. Open Razorpay checkout (user pays)
       const paymentResponse = await openRazorpay({
-        razorpayOrderId: edgeData.razorpay_order_id,
-        amountPaise: edgeData.amount || Math.round(total * 100),
+        razorpayOrderId: checkoutData.razorpay_order_id,
+        amountPaise: checkoutData.razorpay_amount || Math.round(total * 100),
       });
 
-      // Call backend to verify signature and update status securely
+      // 4. Verify signature on the server
       const { data: verifyData } = await api.post('/payments/verify', {
-        razorpay_order_id: paymentResponse.razorpay_order_id || edgeData.razorpay_order_id,
+        razorpay_order_id: paymentResponse.razorpay_order_id || checkoutData.razorpay_order_id,
         razorpay_payment_id: paymentResponse.razorpay_payment_id,
         razorpay_signature: paymentResponse.razorpay_signature,
-        order_id: provisionalOrder.id,
+        order_id: orderId,
       });
 
       if (!verifyData?.success) {
-        // Payment verification failed — show failure page
-        navigate(`/payment-result?status=failed&orderId=${provisionalOrder.id}`, { replace: true });
+        navigate(`/payment-result?status=failed&orderId=${orderId}`, { replace: true });
         return;
       }
 
@@ -274,26 +215,37 @@ export default function CheckoutPage() {
       } catch {
         // ignore storage errors
       }
-      navigate(`/payment-result?status=success&orderId=${provisionalOrder.id}`, { replace: true });
+      navigate(`/payment-result?status=success&orderId=${orderId}`, { replace: true });
     } catch (error) {
-      if (provisionalOrderId) {
+      // If the user cancelled Razorpay modal, leave the order as pending (they can retry later)
+      if (orderId && error.message !== 'Payment cancelled') {
         try {
           const supabase = getSupabaseClient();
           await supabase
             .from('orders')
             .update({ payment_status: 'pending', updated_at: new Date().toISOString() })
-            .eq('id', provisionalOrderId);
+            .eq('id', orderId);
         } catch {
-          // Ignore cleanup/update errors.
+          // Ignore cleanup errors
         }
       }
+
       const backendError = error.response?.data?.error;
-      const errorMsg = backendError || error.message || 'UPI payment failed';
-      setFailure(errorMsg, handleUpiPayment, 'Retry Payment');
+      const msg = backendError || error.message || 'UPI payment failed';
+
+      if (error.message === 'Payment cancelled') {
+        setFailure('Payment was cancelled. You can try again.');
+      } else {
+        setFailure(msg);
+      }
     } finally {
       setProcessing(false);
     }
   };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  RENDER
+  // ═══════════════════════════════════════════════════════════════════════════
 
   if (items.length === 0) {
     return (
@@ -443,14 +395,16 @@ export default function CheckoutPage() {
                 <p className="text-xs mt-1">{errorMessage}</p>
               </div>
             </div>
-            {retryActionRef.current && (
-              <button
-                onClick={() => retryActionRef.current?.()}
-                className="mt-3 text-sm font-semibold text-red-700 underline"
-              >
-                {retryLabel || 'Retry'}
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setErrorMessage('');
+                if (paymentOption === 'upi') handleUpiPayment();
+                else handleCashOrder();
+              }}
+              className="mt-3 text-sm font-semibold text-red-700 underline"
+            >
+              Retry
+            </button>
           </div>
         )}
       </div>
