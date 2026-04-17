@@ -182,6 +182,21 @@ router.post('/checkout', async (req, res) => {
       const razorpay = getRazorpay();
       const amountPaise = Math.round(serverTotal * 100);
 
+      // ── Fee & Commission calculation ─────────────────────────────────────
+      // 1. My Commission: 2%
+      // 2. Razorpay Fee: 2% of total
+      // 3. GST on Razorpay Fee: 18% of the Razorpay Fee
+      const myCommissionRate = 0.02;     // 2%
+      const rpFeeRate = 0.02;            // 2%
+      const gstOnRpFeeRate = 0.18;       // 18%
+
+      const myCommissionAmount = serverTotal * myCommissionRate;
+      const rpFeeAmount = serverTotal * rpFeeRate;
+      const rpGstAmount = rpFeeAmount * gstOnRpFeeRate;
+
+      const totalDeduction = myCommissionAmount + rpFeeAmount + rpGstAmount;
+      const amountToTransferPaise = Math.round((serverTotal - totalDeduction) * 100);
+
       const rpOrderOptions = {
         amount: amountPaise,
         currency: 'INR',
@@ -189,11 +204,13 @@ router.post('/checkout', async (req, res) => {
         transfers: [
           {
             account: restaurant.razorpay_account_id,
-            amount: amountPaise,
+            amount: amountToTransferPaise,
             currency: 'INR',
             notes: {
               name: `Transfer to ${restaurant.name}`,
-              restaurant_id: restaurant.id
+              restaurant_id: restaurant.id,
+              platform_commission: myCommissionAmount.toFixed(2),
+              pg_fees_with_gst: (rpFeeAmount + rpGstAmount).toFixed(2)
             },
             linked_account_notes: ['restaurant_id'],
             on_hold: 0
