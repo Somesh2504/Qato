@@ -266,12 +266,9 @@ router.post('/checkout', async (req, res) => {
       return res.status(err.statusCode || 500).json({ error: err.error.description });
     }
 
-    // Config errors (missing keys)
-    if (err.message && err.message.includes('not configured')) {
-      return res.status(503).json({ error: err.message });
-    }
-
-    res.status(500).json({ error: 'Failed to process checkout' });
+    // Return the actual error message so we can debug
+    const errorMessage = err.message || 'Failed to process checkout';
+    res.status(500).json({ error: errorMessage });
   }
 });
 
