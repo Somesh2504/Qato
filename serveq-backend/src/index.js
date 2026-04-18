@@ -12,6 +12,7 @@ const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
 const analyticsRoutes = require('./routes/analytics');
 const superadminRoutes = require('./routes/superadmin');
+const modificationRoutes = require('./routes/modifications');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -71,6 +72,7 @@ app.use('/api/orders', paymentLimiter, orderRoutes);
 app.use('/api/payments', paymentLimiter, paymentRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/superadmin', superadminRoutes);
+app.use('/api/modifications', modificationRoutes);
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

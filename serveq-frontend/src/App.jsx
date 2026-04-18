@@ -22,6 +22,7 @@ const MenuPage = lazy(() => import('./pages/customer/MenuPage'));
 const CheckoutPage = lazy(() => import('./pages/customer/CheckoutPage'));
 const PaymentResultPage = lazy(() => import('./pages/customer/PaymentResultPage'));
 const OrderStatusPage = lazy(() => import('./pages/customer/OrderStatusPage'));
+const ModifyOrderPage = lazy(() => import('./pages/customer/ModifyOrderPage'));
 const SuperadminDashboard = lazy(() => import('./pages/superadmin/SuperadminDashboard'));
 const SuperadminLoginPage = lazy(() => import('./pages/superadmin/SuperadminLoginPage'));
 
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/payment-result" element={<PaymentResultPage />} />
           <Route path="/order/:orderId" element={<OrderStatusPage />} />
+          <Route path="/order/:orderId/modify" element={<ModifyOrderPage />} />
 
           {/* Admin auth */}
           <Route path="/admin/login" element={<LoginPage />} />

@@ -147,4 +147,11 @@ export const addSuperadmin = (email) =>
 export const removeSuperadmin = (id) =>
   api.delete(`/superadmin/admins/${id}`);
 
+// ─── Modifications ───────────────────────────────────────
+export const getModificationPreview = (orderId, newItems) =>
+  api.post(`/modifications/${orderId}/modification-preview`, { newItems });
+
+export const applyModification = (orderId, data) =>
+  api.post(`/modifications/${orderId}/apply-modification`, data);
+
 export default api;

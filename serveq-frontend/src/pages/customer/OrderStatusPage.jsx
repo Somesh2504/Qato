@@ -672,6 +672,16 @@ export default function OrderStatusPage() {
 
         {/* Actions */}
         <div className="flex gap-3">
+          {(orderStatus === 'pending' || orderStatus === 'preparing') && (
+            <Button 
+              variant="outline" 
+              fullWidth 
+              onClick={() => navigate(`/order/${orderId}/modify`)}
+              className="border-[#FF6B35] text-[#FF6B35] hover:bg-orange-50"
+            >
+              Modify Items
+            </Button>
+          )}
           <Button variant="outline" fullWidth icon={<Home size={16} />} onClick={() => {
             const slug = restaurant?.slug;
             if (slug) {
