@@ -51,11 +51,16 @@ CREATE TABLE IF NOT EXISTS menu_items (
   description   TEXT,
   price         NUMERIC     NOT NULL,
   photo_url     TEXT,
+  model_glb_url  TEXT,
+  model_usdz_url TEXT,
   is_veg        BOOLEAN     DEFAULT TRUE,
   is_available  BOOLEAN     DEFAULT TRUE,
   sort_order    INTEGER     DEFAULT 0,
   created_at    TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS model_glb_url TEXT;
+ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS model_usdz_url TEXT;
 
 -- ── 4. orders ─────────────────────────────────────────────────────────────────
 -- status values       : pending | preparing | done | cancelled

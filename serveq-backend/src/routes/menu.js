@@ -109,7 +109,7 @@ router.delete('/category/:id', authMiddleware, async (req, res) => {
 
 // POST /api/menu/item
 router.post('/item', authMiddleware, async (req, res) => {
-  const { category_id, name, description, price, is_veg, photo_url } = req.body;
+  const { category_id, name, description, price, is_veg, photo_url, model_glb_url, model_usdz_url } = req.body;
 
   if (!category_id || !name || price === undefined) {
     return res.status(400).json({ error: 'category_id, name and price are required' });
@@ -125,6 +125,8 @@ router.post('/item', authMiddleware, async (req, res) => {
       price,
       is_veg: is_veg !== undefined ? is_veg : true,
       photo_url: photo_url || null,
+      model_glb_url: model_glb_url || null,
+      model_usdz_url: model_usdz_url || null,
       is_available: true,
     })
     .select()
@@ -136,7 +138,7 @@ router.post('/item', authMiddleware, async (req, res) => {
 
 // PUT /api/menu/item/:id
 router.put('/item/:id', authMiddleware, async (req, res) => {
-  const allowed = ['category_id', 'name', 'description', 'price', 'is_veg', 'photo_url', 'is_available', 'sort_order'];
+  const allowed = ['category_id', 'name', 'description', 'price', 'is_veg', 'photo_url', 'model_glb_url', 'model_usdz_url', 'is_available', 'sort_order'];
   const updates = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];

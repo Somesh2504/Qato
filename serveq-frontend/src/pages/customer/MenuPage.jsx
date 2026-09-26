@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Leaf, Minus, Plus, Search } from 'lucide-react';
+import { Clock, Leaf, Minus, Plus, Search, Box } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { getSupabaseClient } from '../../lib/supabaseClient';
@@ -33,6 +33,7 @@ export default function MenuPage() {
   const [filterType, setFilterType] = useState('all'); // 'all' | 'veg' | 'nonveg'
   const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
   const [hasSessionOrders, setHasSessionOrders] = useState(false);
+  const [arModalItem, setArModalItem] = useState(null);
 
   const categoryRefs = useRef({});
   const headerRef = useRef(null);
@@ -103,7 +104,7 @@ export default function MenuPage() {
         supabase
           .from('menu_items')
           .select(
-            'id,category_id,name,description,price,is_veg,photo_url,is_available,sort_order'
+            'id,category_id,name,description,price,is_veg,photo_url,model_glb_url,model_usdz_url,is_available,sort_order'
           )
           .eq('restaurant_id', restaurantId)
           .eq('is_available', true)
@@ -444,6 +445,15 @@ export default function MenuPage() {
                             {item.description}
                           </p>
                         ) : null}
+
+                        {item.model_glb_url ? (
+                          <button
+                            onClick={() => setArModalItem(item)}
+                            className="w-full mt-2.5 py-1.5 px-2 bg-orange-50 border border-orange-200 text-[#FF6B35] hover:bg-orange-100 active:scale-95 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                          >
+                            <Box size={13} /> View in 3D/AR
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   );
@@ -534,6 +544,54 @@ export default function MenuPage() {
           )}
         </div>
       </BottomSheet>
+
+      {arModalItem && (
+        <BottomSheet
+          isOpen={Boolean(arModalItem)}
+          onClose={() => setArModalItem(null)}
+          title={`3D Dish Preview — ${arModalItem.name}`}
+          maxHeight="90vh"
+        >
+          <div className="p-4 space-y-4">
+            <div className="relative w-full h-[360px] bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl overflow-hidden border border-gray-100 shadow-inner flex items-center justify-center">
+              <model-viewer
+                src={arModalItem.model_glb_url}
+                ios-src={arModalItem.model_usdz_url || undefined}
+                alt={arModalItem.name}
+                ar
+                ar-modes="webxr scene-viewer quick-look"
+                camera-controls
+                touch-action="pan-y"
+                auto-rotate
+                shadow-intensity="1"
+                style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
+              >
+                <button
+                  slot="ar-button"
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#FF6B35] text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:bg-[#E55A24] transition-all flex items-center gap-2"
+                >
+                  <span>📱 View in your space (AR)</span>
+                </button>
+              </model-viewer>
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <div>
+                <p className="font-bold text-[#1A1A2E] text-base">{arModalItem.name}</p>
+                <p className="text-sm font-bold text-[#FF6B35]">{formatIndianPrice(arModalItem.price)}</p>
+              </div>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  handleAdd(arModalItem);
+                  setArModalItem(null);
+                }}
+              >
+                Add to Cart
+              </Button>
+            </div>
+          </div>
+        </BottomSheet>
+      )}
     </div>
   );
 }

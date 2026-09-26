@@ -17,6 +17,8 @@ const EMPTY_FORM = {
   is_available: true,
   category_id: '',
   photo_url: '',
+  model_glb_url: '',
+  model_usdz_url: '',
   prep_time_minutes: '',
 };
 
@@ -24,6 +26,7 @@ export default function MenuManagementPage() {
   const { restaurantId } = useAuth();
   const supabaseRef = useRef(null);
   const fileInputRef = useRef(null);
+  const modelInputRef = useRef(null);
   const longPressRef = useRef(null);
   const loadDataRef = useRef(null);
 
@@ -39,6 +42,7 @@ export default function MenuManagementPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingModel, setUploadingModel] = useState(false);
   const [dragCategoryId, setDragCategoryId] = useState('');
   const [aiImportOpen, setAiImportOpen] = useState(false);
   const [aiImportBusy, setAiImportBusy] = useState(false);
@@ -134,6 +138,8 @@ export default function MenuManagementPage() {
         is_available: item.is_available !== false,
         category_id: item.category_id || selectedCategoryId,
         photo_url: item.photo_url || '',
+        model_glb_url: item.model_glb_url || '',
+        model_usdz_url: item.model_usdz_url || '',
         prep_time_minutes: item.prep_time_minutes?.toString() || '',
       });
     } else {
@@ -179,6 +185,8 @@ export default function MenuManagementPage() {
         is_available: form.is_available,
         category_id: finalCategoryId,
         photo_url: form.photo_url || null,
+        model_glb_url: form.model_glb_url || null,
+        model_usdz_url: form.model_usdz_url || null,
         prep_time_minutes: form.prep_time_minutes ? Number(form.prep_time_minutes) : null,
       };
 
@@ -244,6 +252,33 @@ export default function MenuManagementPage() {
       toast.error('Photo upload failed');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const uploadModel = async (file) => {
+    if (!file) return;
+    setUploadingModel(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'glb';
+      if (ext !== 'glb' && ext !== 'usdz') {
+        toast.error('Only .glb and .usdz files are supported for 3D models');
+        return;
+      }
+      const path = `${restaurantId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const contentType = ext === 'usdz' ? 'model/vnd.usdz+zip' : 'model/gltf-binary';
+      const upload = await supabaseRef.current.storage.from('menu-models').upload(path, file, { contentType, upsert: false });
+      if (upload.error) throw upload.error;
+      const pub = supabaseRef.current.storage.from('menu-models').getPublicUrl(path);
+      if (ext === 'usdz') {
+        setForm((prev) => ({ ...prev, model_usdz_url: pub.data.publicUrl }));
+      } else {
+        setForm((prev) => ({ ...prev, model_glb_url: pub.data.publicUrl }));
+      }
+      toast.success(`3D Model (.${ext}) uploaded`);
+    } catch {
+      toast.error('3D Model upload failed');
+    } finally {
+      setUploadingModel(false);
     }
   };
 
@@ -709,8 +744,52 @@ export default function MenuManagementPage() {
                 </div>
                 <div className="flex gap-2">
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => uploadPhoto(e.target.files?.[0])} />
-                  <Button type="button" variant="outline" loading={uploading} onClick={() => fileInputRef.current?.click()}>Upload</Button>
+                  <Button type="button" variant="outline" loading={uploading} onClick={() => fileInputRef.current?.click()}>Upload Photo</Button>
                 </div>
+              </div>
+
+              <div className="p-3 rounded-xl border border-gray-200 bg-gray-50/50 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <label className="text-xs font-semibold text-[#1A1A2E]">3D Model (.glb / .usdz)</label>
+                    <p className="text-[11px] text-gray-500">For AR dish viewing on mobile devices</p>
+                  </div>
+                  <input
+                    ref={modelInputRef}
+                    type="file"
+                    accept=".glb,.usdz"
+                    className="hidden"
+                    onChange={(e) => uploadModel(e.target.files?.[0])}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    loading={uploadingModel}
+                    onClick={() => modelInputRef.current?.click()}
+                  >
+                    Upload 3D model (.glb)
+                  </Button>
+                </div>
+
+                {(form.model_glb_url || form.model_usdz_url) && (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-1.5 text-xs text-green-700">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Check size={13} className="text-green-600" /> Model attached
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, model_glb_url: '', model_usdz_url: '' }))}
+                      className="text-gray-400 hover:text-red-500 font-bold"
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                )}
+
+                <p className="text-[11px] text-gray-500 leading-snug">
+                  💡 Tip: Photograph your dish from 3-4 angles and use a photo-to-3D tool to generate a .glb/.usdz file. Keep files under ~3MB for fast loading.
+                </p>
               </div>
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm" placeholder="Item name" />
               <input type="number" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm" placeholder="Price ₹" />
