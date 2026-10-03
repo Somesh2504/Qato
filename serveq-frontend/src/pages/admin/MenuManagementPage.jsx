@@ -264,19 +264,31 @@ export default function MenuManagementPage() {
         toast.error('Only .glb and .usdz files are supported for 3D models');
         return;
       }
-      const path = `${restaurantId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const path = `models/${restaurantId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const contentType = ext === 'usdz' ? 'model/vnd.usdz+zip' : 'model/gltf-binary';
-      const upload = await supabaseRef.current.storage.from('menu-models').upload(path, file, { contentType, upsert: false });
+      
+      // Try uploading to 'menu-models' first; fallback to existing 'menu-images' bucket if menu-models is not created yet
+      let bucketName = 'menu-models';
+      let upload = await supabaseRef.current.storage.from(bucketName).upload(path, file, { contentType, upsert: false });
+      
+      if (upload.error) {
+        console.warn('Upload to menu-models failed, falling back to menu-images bucket:', upload.error);
+        bucketName = 'menu-images';
+        upload = await supabaseRef.current.storage.from(bucketName).upload(path, file, { contentType, upsert: false });
+      }
+
       if (upload.error) throw upload.error;
-      const pub = supabaseRef.current.storage.from('menu-models').getPublicUrl(path);
+      
+      const pub = supabaseRef.current.storage.from(bucketName).getPublicUrl(path);
       if (ext === 'usdz') {
         setForm((prev) => ({ ...prev, model_usdz_url: pub.data.publicUrl }));
       } else {
         setForm((prev) => ({ ...prev, model_glb_url: pub.data.publicUrl }));
       }
       toast.success(`3D Model (.${ext}) uploaded`);
-    } catch {
-      toast.error('3D Model upload failed');
+    } catch (err) {
+      console.error('3D Model upload error:', err);
+      toast.error(err?.message || '3D Model upload failed');
     } finally {
       setUploadingModel(false);
     }
