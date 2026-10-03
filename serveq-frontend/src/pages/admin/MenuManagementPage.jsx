@@ -191,18 +191,39 @@ export default function MenuManagementPage() {
       };
 
       if (editingItem) {
-        const { error } = await supabaseRef.current.from('menu_items').update(payload).eq('id', editingItem.id).eq('restaurant_id', restaurantId);
-        if (error) throw error;
+        let { error } = await supabaseRef.current.from('menu_items').update(payload).eq('id', editingItem.id).eq('restaurant_id', restaurantId);
+        if (error && (error.code === '42703' || error.message?.includes('model_glb_url') || error.message?.includes('does not exist'))) {
+          console.warn('3D columns missing in database table, saving without 3D fields:', error);
+          delete payload.model_glb_url;
+          delete payload.model_usdz_url;
+          const retry = await supabaseRef.current.from('menu_items').update(payload).eq('id', editingItem.id).eq('restaurant_id', restaurantId);
+          if (retry.error) throw retry.error;
+          toast('Saved item! (Run SQL migration in Supabase to enable 3D models)', { icon: '⚠️' });
+          error = null;
+        } else if (error) {
+          throw error;
+        }
       } else {
         const { count } = await supabaseRef.current.from('menu_items').select('id', { count: 'exact', head: true }).eq('category_id', finalCategoryId).eq('restaurant_id', restaurantId);
-        const { error } = await supabaseRef.current.from('menu_items').insert({ ...payload, sort_order: count || 0 });
-        if (error) throw error;
+        let { error } = await supabaseRef.current.from('menu_items').insert({ ...payload, sort_order: count || 0 });
+        if (error && (error.code === '42703' || error.message?.includes('model_glb_url') || error.message?.includes('does not exist'))) {
+          console.warn('3D columns missing in database table, inserting without 3D fields:', error);
+          delete payload.model_glb_url;
+          delete payload.model_usdz_url;
+          const retry = await supabaseRef.current.from('menu_items').insert({ ...payload, sort_order: count || 0 });
+          if (retry.error) throw retry.error;
+          toast('Item added! (Run SQL migration in Supabase to enable 3D models)', { icon: '⚠️' });
+          error = null;
+        } else if (error) {
+          throw error;
+        }
       }
       setDrawerOpen(false);
       setEditingItem(null);
       setForm(EMPTY_FORM);
-    } catch {
-      toast.error('Failed to save item');
+    } catch (err) {
+      console.error('Save item error:', err);
+      toast.error(err?.message || 'Failed to save item');
     } finally {
       setSaving(false);
     }
