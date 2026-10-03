@@ -95,7 +95,7 @@ export default function MenuPage() {
 
       const restaurantId = restaurantData.id;
 
-      const [catRes, itemRes] = await Promise.all([
+      const [catRes, itemResRaw] = await Promise.all([
         supabase
           .from('menu_categories')
           .select('id,name,sort_order')
@@ -110,6 +110,19 @@ export default function MenuPage() {
           .eq('is_available', true)
           .order('sort_order', { ascending: true }),
       ]);
+
+      let itemRes = itemResRaw;
+      if (itemRes.error && (itemRes.error.code === '42703' || itemRes.error.message?.includes('does not exist') || itemRes.error.message?.includes('model_glb_url'))) {
+        console.warn('3D model columns missing in Supabase schema, falling back to basic select:', itemRes.error);
+        itemRes = await supabase
+          .from('menu_items')
+          .select(
+            'id,category_id,name,description,price,is_veg,photo_url,is_available,sort_order'
+          )
+          .eq('restaurant_id', restaurantId)
+          .eq('is_available', true)
+          .order('sort_order', { ascending: true });
+      }
 
       if (catRes.error) throw catRes.error;
       if (itemRes.error) throw itemRes.error;
