@@ -281,12 +281,12 @@ export default function MenuManagementPage() {
     setUploadingModel(true);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'glb';
-      if (ext !== 'glb' && ext !== 'usdz') {
-        toast.error('Only .glb and .usdz files are supported for 3D models');
+      if (ext !== 'glb' && ext !== 'gltf' && ext !== 'usdz') {
+        toast.error('Only .glb, .gltf and .usdz files are supported for 3D models');
         return;
       }
       const path = `models/${restaurantId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const contentType = ext === 'usdz' ? 'model/vnd.usdz+zip' : 'model/gltf-binary';
+      const contentType = ext === 'usdz' ? 'model/vnd.usdz+zip' : ext === 'gltf' ? 'model/gltf+json' : 'model/gltf-binary';
       
       // Try uploading to 'menu-models' first; fallback to existing 'menu-images' bucket if menu-models is not created yet
       let bucketName = 'menu-models';
