@@ -806,22 +806,43 @@ export default function MenuManagementPage() {
                 </div>
 
                 {(form.model_glb_url || form.model_usdz_url) && (
-                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-1.5 text-xs text-green-700">
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <Check size={13} className="text-green-600" /> Model attached
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, model_glb_url: '', model_usdz_url: '' }))}
-                      className="text-gray-400 hover:text-red-500 font-bold"
-                    >
-                      <X size={13} />
-                    </button>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-1.5 text-xs text-green-700">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Check size={13} className="text-green-600" /> Model attached
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, model_glb_url: '', model_usdz_url: '' }))}
+                        className="text-gray-400 hover:text-red-500 font-bold"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+
+                    {form.model_glb_url && (
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-semibold text-gray-500">Live 360° Interactive Orbit Preview:</p>
+                        <div className="relative h-44 w-full rounded-xl bg-gradient-to-b from-gray-50 to-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center shadow-inner">
+                          <model-viewer
+                            src={form.model_glb_url}
+                            ios-src={form.model_usdz_url || undefined}
+                            alt="3D Preview"
+                            camera-controls
+                            auto-rotate
+                            rotation-per-second="30deg"
+                            touch-action="pan-y"
+                            shadow-intensity="1.2"
+                            style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 <p className="text-[11px] text-gray-500 leading-snug">
-                  💡 Tip: Photograph your dish from 3-4 angles and use a photo-to-3D tool to generate a .glb/.usdz file. Keep files under ~3MB for fast loading.
+                  💡 <strong>100% Free 360° Dish Setup</strong>: Scan your dish using any free 3D scanner app (e.g. KIRI Engine or Polycam), export the .glb file, and upload it here. Keep files under ~3MB for fast loading.
                 </p>
               </div>
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm" placeholder="Item name" />
