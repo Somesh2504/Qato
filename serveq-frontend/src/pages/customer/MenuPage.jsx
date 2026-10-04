@@ -38,6 +38,7 @@ export default function MenuPage() {
   const categoryRefs = useRef({});
   const headerRef = useRef(null);
   const fetchMenuDataRef = useRef(null);
+  const modelViewerRef = useRef(null);
 
   const supabase = useMemo(() => {
     try {
@@ -566,41 +567,63 @@ export default function MenuPage() {
           maxHeight="90vh"
         >
           <div className="p-4 space-y-4">
-            <div className="relative w-full h-[360px] bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl overflow-hidden border border-gray-100 shadow-inner flex items-center justify-center">
+            <div className="relative w-full h-[380px] bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl overflow-hidden border border-gray-100 shadow-inner flex items-center justify-center">
               <model-viewer
+                ref={modelViewerRef}
                 src={arModalItem.model_glb_url}
                 ios-src={arModalItem.model_usdz_url || undefined}
                 alt={arModalItem.name}
                 ar
                 ar-modes="webxr scene-viewer quick-look"
+                ar-scale="auto"
                 camera-controls
-                touch-action="pan-y"
                 auto-rotate
-                shadow-intensity="1"
+                rotation-per-second="30deg"
+                interaction-prompt="auto"
+                touch-action="pan-y"
+                shadow-intensity="1.5"
+                shadow-softness="0.8"
                 style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
               >
                 <button
                   slot="ar-button"
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#FF6B35] text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:bg-[#E55A24] transition-all flex items-center gap-2"
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#FF6B35] to-[#E55A24] text-white px-6 py-3 rounded-2xl text-xs font-bold shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 z-10 border border-white/20"
                 >
-                  <span>📱 View in your space (AR)</span>
+                  <span className="text-sm">📷</span>
+                  <span>Place Dish on Dining Table (AR)</span>
                 </button>
               </model-viewer>
             </div>
-            <div className="flex items-center justify-between pt-1">
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-1">
               <div>
                 <p className="font-bold text-[#1A1A2E] text-base">{arModalItem.name}</p>
                 <p className="text-sm font-bold text-[#FF6B35]">{formatIndianPrice(arModalItem.price)}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">💡 Drag to rotate 360° or tap AR to project life-size onto your table.</p>
               </div>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  handleAdd(arModalItem);
-                  setArModalItem(null);
-                }}
-              >
-                Add to Cart
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (modelViewerRef.current?.canActivateAR) {
+                      modelViewerRef.current.activateAR();
+                    } else {
+                      toast.error('AR is available on iOS (Safari) and Android (Chrome) phones');
+                    }
+                  }}
+                >
+                  📷 Launch AR Camera
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    handleAdd(arModalItem);
+                    setArModalItem(null);
+                  }}
+                >
+                  Add to Cart
+                </Button>
+              </div>
             </div>
           </div>
         </BottomSheet>
